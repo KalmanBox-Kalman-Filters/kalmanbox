@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}kalmanbox Report{% endblock %}</title>
+    <style>
+    {% block styles %}{% endblock %}
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <nav class="report-sidebar">
+            {% block sidebar %}
+            <ul>
+                <li><a href="#summary">Summary</a></li>
+                <li><a href="#parameters">Parameters</a></li>
+                <li><a href="#info-criteria">Info Criteria</a></li>
+                <li><a href="#diagnostics">Diagnostics</a></li>
+            </ul>
+            {% endblock %}
+        </nav>
+        <main class="report-main">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    <div class="report-footer">
+        {% block footer %}
+        Report type: {{ metadata.report_type | default('SSM') }} |
+        Generated: {{ metadata.generated_at | default('') }} |
+        kalmanbox v{{ metadata.kalmanbox_version | default('unknown') }}
+        {% endblock %}
+    </div>
+    {% block scripts %}
+    <script>
+    document.querySelectorAll('.section-header').forEach(function(header) {
+        header.addEventListener('click', function() {
+            this.parentElement.classList.toggle('collapsed');
+        });
+    });
+    </script>
+    {% endblock %}
+</body>
+</html>

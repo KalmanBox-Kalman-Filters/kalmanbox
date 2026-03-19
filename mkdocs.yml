@@ -1,0 +1,94 @@
+site_name: KalmanBox
+site_url: https://kalmanbox.nodesecon.com
+site_description: State-space models and Kalman filtering for time series analysis
+repo_url: https://github.com/nodesecon/kalmanbox
+repo_name: nodesecon/kalmanbox
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+    - search.highlight
+    - search.suggest
+  icon:
+    repo: fontawesome/brands/github
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quickstart: getting-started/quickstart.md
+    - Key Concepts: getting-started/key-concepts.md
+  - User Guide:
+    - Local Level: user-guide/local-level/overview.md
+    - BSM: user-guide/bsm/overview.md
+    - UCM: user-guide/ucm/overview.md
+    - Dynamic Factor: user-guide/dynamic-factor/overview.md
+    - TVP Regression: user-guide/tvp/overview.md
+    - ARIMA-SSM: user-guide/arima-ssm/overview.md
+    - Custom Models: user-guide/custom/overview.md
+  - API Reference:
+    - Core: api/core.md
+    - Filters: api/filters.md
+    - Models: api/models.md
+    - Estimation: api/estimation.md
+    - Datasets: api/datasets.md
+    - Experiment: api/experiment.md
+    - CLI: api/cli.md
+  - Theory:
+    - State-Space Models: theory/state-space-theory.md
+    - Kalman Filter: theory/kalman-filter-derivation.md
+  - Benchmarks: benchmarks/performance.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: false
+            docstring_style: numpy
+            show_root_heading: true
+            heading_level: 3
+            members_order: source
+            show_signature_annotations: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - attr_list
+  - md_in_html
+  - footnotes
+  - toc:
+      permalink: true
+
+extra_javascript:
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js

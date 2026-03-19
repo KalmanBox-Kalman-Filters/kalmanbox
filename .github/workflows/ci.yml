@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint with ruff
+        run: |
+          ruff check kalmanbox/ tests/
+          ruff format --check kalmanbox/ tests/
+
+      - name: Type check with pyright
+        run: pyright kalmanbox/
+
+      - name: Run tests with coverage
+        run: |
+          pytest --cov=kalmanbox --cov-report=xml --cov-report=term-missing -v
+
+      - name: Check coverage threshold
+        run: |
+          coverage report --fail-under=90
+
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.12'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+
+  quality:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install bandit radon interrogate
+
+      - name: Security scan with bandit
+        run: bandit -r kalmanbox/ -ll --skip B101
+
+      - name: Complexity check with radon
+        run: |
+          radon cc kalmanbox/ -a -nc
+          radon cc kalmanbox/ --min C --json | python -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          violations = []
+          for filepath, funcs in data.items():
+              for func in funcs:
+                  if func['complexity'] > 10:
+                      violations.append(f\"{filepath}:{func['name']} CC={func['complexity']}\")
+          if violations:
+              print('Functions with CC > 10:')
+              for v in violations:
+                  print(f'  {v}')
+              sys.exit(1)
+          print('All functions have CC <= 10')
+          "
+
+      - name: Docstring coverage with interrogate
+        run: interrogate kalmanbox/ -v --fail-under 95 --ignore-init-method --ignore-init-module
+
+  docs:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev,docs]"
+
+      - name: Build docs
+        run: mkdocs build --strict

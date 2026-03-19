@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}{{ model_info.model_name | default('SSM') }} Report{% endblock %}
+
+{% block content %}
+<h1>{{ model_info.model_name | default('State Space Model') }} Report</h1>
+
+<!-- Model Summary -->
+<div class="section" id="summary">
+    <h2 class="section-header">Model Summary</h2>
+    <div class="section-content">
+        <div class="info-grid">
+            {% if model_info.n_obs %}
+            <div class="info-card">
+                <div class="label">Observations</div>
+                <div class="value">{{ model_info.n_obs }}</div>
+            </div>
+            {% endif %}
+            {% if model_info.n_states %}
+            <div class="info-card">
+                <div class="label">States</div>
+                <div class="value">{{ model_info.n_states }}</div>
+            </div>
+            {% endif %}
+            {% if model_info.n_params %}
+            <div class="info-card">
+                <div class="label">Parameters</div>
+                <div class="value">{{ model_info.n_params }}</div>
+            </div>
+            {% endif %}
+            {% if model_info.optimizer %}
+            <div class="info-card">
+                <div class="label">Optimizer</div>
+                <div class="value">{{ model_info.optimizer }}</div>
+            </div>
+            {% endif %}
+            <div class="info-card">
+                <div class="label">Converged</div>
+                <div class="value">{{ 'Yes' if model_info.converged else 'No' }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Parameter Estimates -->
+{% if parameters %}
+<div class="section" id="parameters">
+    <h2 class="section-header">Parameter Estimates</h2>
+    <div class="section-content">
+        <table>
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Estimate</th>
+                    <th>Std. Error</th>
+                    <th>t-stat</th>
+                    <th>p-value</th>
+                    <th>Sig.</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in parameters %}
+                <tr>
+                    <td>{{ p.name }}</td>
+                    <td class="numeric">{{ p.value | fmt_number(4) }}</td>
+                    <td class="numeric">{{ p.se | fmt_number(4) if p.se is defined else '--' }}</td>
+                    <td class="numeric">{{ p.t_stat | fmt_number(4) if p.t_stat is defined else '--' }}</td>
+                    <td class="numeric">{{ p.p_value | fmt_pvalue if p.p_value is defined else '--' }}</td>
+                    <td class="{{ 'significant' if p.significant | default(false) }}">
+                        {{ p.p_value | significance if p.p_value is defined else '' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p><small>Significance: *** p&lt;0.001, ** p&lt;0.01, * p&lt;0.05</small></p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Information Criteria -->
+{% if info_criteria %}
+<div class="section" id="info-criteria">
+    <h2 class="section-header">Information Criteria</h2>
+    <div class="section-content">
+        <div class="info-grid">
+            {% if info_criteria.loglike is not none %}
+            <div class="info-card">
+                <div class="label">Log-Likelihood</div>
+                <div class="value">{{ info_criteria.loglike | fmt_number(4) }}</div>
+            </div>
+            {% endif %}
+            {% if info_criteria.aic is not none %}
+            <div class="info-card">
+                <div class="label">AIC</div>
+                <div class="value">{{ info_criteria.aic | fmt_number(4) }}</div>
+            </div>
+            {% endif %}
+            {% if info_criteria.bic is not none %}
+            <div class="info-card">
+                <div class="label">BIC</div>
+                <div class="value">{{ info_criteria.bic | fmt_number(4) }}</div>
+            </div>
+            {% endif %}
+            {% if info_criteria.hqic is not none %}
+            <div class="info-card">
+                <div class="label">HQIC</div>
+                <div class="value">{{ info_criteria.hqic | fmt_number(4) }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Diagnostics -->
+{% if diagnostics %}
+<div class="section" id="diagnostics">
+    <h2 class="section-header">Diagnostics</h2>
+    <div class="section-content">
+        {% for test_name, test_result in diagnostics.items() %}
+        <h3>{{ test_name | replace('_', ' ') | title }}</h3>
+        <p>{{ test_result }}</p>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- DFM-specific: Factors -->
+{% if factors is defined and factors %}
+<div class="section" id="factors">
+    <h2 class="section-header">Extracted Factors</h2>
+    <div class="section-content">
+        <p>{{ factors | length }} factor(s) extracted.</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- UCM-specific: Component Details -->
+{% if component_details is defined and component_details %}
+<div class="section" id="components">
+    <h2 class="section-header">Component Details</h2>
+    <div class="section-content">
+        <table>
+            <thead>
+                <tr>
+                    <th>Component</th>
+                    <th>Mean</th>
+                    <th>Std</th>
+                    <th>Min</th>
+                    <th>Max</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in component_details %}
+                <tr>
+                    <td>{{ c.name }}</td>
+                    <td class="numeric">{{ c.mean | fmt_number(4) }}</td>
+                    <td class="numeric">{{ c.std | fmt_number(4) }}</td>
+                    <td class="numeric">{{ c.min | fmt_number(4) }}</td>
+                    <td class="numeric">{{ c.max | fmt_number(4) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- TVP-specific: Coefficients -->
+{% if coefficients is defined and coefficients %}
+<div class="section" id="coefficients">
+    <h2 class="section-header">Time-Varying Coefficients</h2>
+    <div class="section-content">
+        <table>
+            <thead>
+                <tr>
+                    <th>Coefficient</th>
+                    <th>Mean</th>
+                    <th>Std</th>
+                    <th>Min</th>
+                    <th>Max</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in coefficients %}
+                <tr>
+                    <td>{{ c.name }}</td>
+                    <td class="numeric">{{ c.mean | fmt_number(4) }}</td>
+                    <td class="numeric">{{ c.std | fmt_number(4) }}</td>
+                    <td class="numeric">{{ c.min | fmt_number(4) }}</td>
+                    <td class="numeric">{{ c.max | fmt_number(4) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

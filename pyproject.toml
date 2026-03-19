@@ -1,0 +1,103 @@
+[build-system]
+requires = ["hatchling<1.22"]
+build-backend = "hatchling.build"
+
+[project]
+name = "kalmanbox"
+dynamic = ["version"]
+description = "State-space models and Kalman filtering for time series analysis"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "NodesEcon" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "pandas>=2.0",
+]
+
+[project.scripts]
+kalmanbox = "kalmanbox.cli.main:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.4",
+    "pyright>=1.1",
+    "hypothesis>=6.0",
+    "bandit>=1.7",
+    "radon>=6.0",
+    "interrogate>=1.5",
+    "mutmut>=2.4",
+    "pre-commit>=3.0",
+    "structlog>=23.0",
+    "pyyaml>=6.0",
+]
+numba = [
+    "numba>=0.58",
+]
+docs = [
+    "mkdocs>=1.5",
+    "mkdocs-material>=9.0",
+    "mkdocstrings[python]>=0.24",
+]
+
+[tool.hatch.version]
+path = "kalmanbox/__version__.py"
+
+[tool.hatch.build.targets.sdist]
+exclude = ["logs/", "docs/", ".github/", "tests/", ".venv/"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["kalmanbox"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"kalmanbox/filters/*.py" = ["N803", "N806"]
+"kalmanbox/smoothers/*.py" = ["N803", "N806"]
+"kalmanbox/models/*.py" = ["N803", "N806"]
+"kalmanbox/estimation/*.py" = ["N803", "N806"]
+"kalmanbox/diagnostics/*.py" = ["N803", "N806"]
+"kalmanbox/utils/numba_core.py" = ["N803", "N806", "SIM108"]
+"tests/**/*.py" = ["N801", "N802", "N803", "N806"]
+
+[tool.pyright]
+pythonVersion = "3.11"
+typeCheckingMode = "strict"
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnknownArgumentType = false
+reportConstantRedefinition = false
+reportPrivateUsage = false
+reportPrivateImportUsage = false
+reportPossiblyUnboundVariable = false
+reportUntypedFunctionDecorator = false
+reportOptionalMemberAccess = false
+reportMissingImports = false
+reportUnusedVariable = false
+reportMissingTypeArgument = false
+reportAttributeAccessIssue = false
+reportArgumentType = false
