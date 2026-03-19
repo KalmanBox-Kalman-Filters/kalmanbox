@@ -7,7 +7,7 @@ name = "kalmanbox"
 dynamic = ["version"]
 description = "State-space models and Kalman filtering for time series analysis"
 readme = "README.md"
-license = "MIT"
+license = {text = "MIT"}
 requires-python = ">=3.11"
 authors = [
     { name = "NodesEcon" },
