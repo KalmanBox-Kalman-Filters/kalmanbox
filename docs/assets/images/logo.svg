@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="kalmanbox logo">
+  <title>kalmanbox</title>
+  <desc>Foundational Kalman Filter and State-Space library — NodesEcon ecosystem</desc>
+
+  <defs>
+    <linearGradient id="kbBox" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"  stop-color="#2c3e8a"/>
+      <stop offset="100%" stop-color="#6f42c1"/>
+    </linearGradient>
+    <linearGradient id="kbWave" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"  stop-color="#00b8a9"/>
+      <stop offset="100%" stop-color="#f6ae2d"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer rounded box: the "box" in kalmanbox -->
+  <rect x="20" y="20" width="216" height="216" rx="36" ry="36"
+        fill="url(#kbBox)"/>
+
+  <!-- Inner subtle frame -->
+  <rect x="36" y="36" width="184" height="184" rx="28" ry="28"
+        fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="2"/>
+
+  <!-- Noisy observations (scatter points) -->
+  <g fill="#f6ae2d" opacity="0.9">
+    <circle cx="62"  cy="170" r="3"/>
+    <circle cx="80"  cy="148" r="3"/>
+    <circle cx="98"  cy="134" r="3"/>
+    <circle cx="116" cy="118" r="3"/>
+    <circle cx="134" cy="108" r="3"/>
+    <circle cx="152" cy="100" r="3"/>
+    <circle cx="170" cy="92"  r="3"/>
+    <circle cx="188" cy="84"  r="3"/>
+  </g>
+
+  <!-- Hidden state trajectory (smoothed) -->
+  <path d="M 56 178 C 90 150, 130 110, 198 78"
+        fill="none" stroke="url(#kbWave)" stroke-width="6"
+        stroke-linecap="round"/>
+
+  <!-- Confidence band (state uncertainty) -->
+  <path d="M 56 188 C 90 160, 130 120, 198 88
+           L 198 68 C 130 100, 90 140, 56 168 Z"
+        fill="#ffffff" opacity="0.08"/>
+
+  <!-- Letter K (kalman) -->
+  <g fill="#ffffff" font-family="'Inter', 'Helvetica', sans-serif"
+     font-weight="700" font-size="78" text-anchor="middle">
+    <text x="128" y="220">K</text>
+  </g>
+</svg>

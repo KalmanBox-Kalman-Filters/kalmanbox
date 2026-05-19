@@ -1,0 +1,55 @@
+# Read the Docs configuration file for kalmanbox
+# https://docs.readthedocs.io/en/stable/config-file/v2.html
+#
+# kalmanbox is the foundational Kalman Filter / State-Space library
+# of the NodesEcon ecosystem (chronobox, forecastbox, particlefilterbox).
+# This file defines how the documentation is built on Read the Docs.
+
+version: 2
+
+# Build environment
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.12"
+  jobs:
+    post_checkout:
+      # Cancel build if no docs/code/yaml changes since last successful build
+      - git fetch --unshallow || true
+    pre_build:
+      - python -c "import sys; print('Python', sys.version)"
+      - python -c "import kalmanbox; print('kalmanbox', kalmanbox.__version__)" || true
+
+# Build documentation with MkDocs
+mkdocs:
+  configuration: mkdocs.yml
+  fail_on_warning: false
+
+# Optional formats besides HTML
+formats:
+  - pdf
+  - htmlzip
+  - epub
+
+# Install project + docs extras so mkdocstrings can introspect kalmanbox
+python:
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs
+
+# Search ranking tweaks - emphasize tutorials, theory, user-guide
+search:
+  ranking:
+    api/*: -1
+    benchmarks/*: -1
+    contributing/*: -3
+    faq/*: 2
+    getting-started/*: 4
+    tutorials/*: 4
+    theory/*: 3
+    user-guide/*: 3
+  ignore:
+    - 404.html
+    - search.html

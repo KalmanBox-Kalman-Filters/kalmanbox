@@ -1,0 +1,52 @@
+======================================================================
+                      State Space Model Results                       
+======================================================================
+Log-Likelihood:                     -1746.0963
+AIC:                                 3568.1927
+BIC:                                 3707.3852
+HQIC:                                3623.9726
+Num. observations:                         288
+Num. parameters:                            38
+Converged:                                True
+----------------------------------------------------------------------
+Parameter                Estimate      Std.Err      t-value      p-value
+----------------------------------------------------------------------
+lambda_gdp_growth_f0      -0.5532          nan          nan          nan
+lambda_industrial_production_f0      -0.5405          nan          nan          nan
+lambda_industrial_production_f1       0.0560          nan          nan          nan
+lambda_unemployment_f0       0.5183          nan          nan          nan
+lambda_unemployment_f1      -0.1795          nan          nan          nan
+lambda_unemployment_f2       0.0407          nan          nan          nan
+lambda_payrolls_f0        -0.5312          nan          nan          nan
+lambda_payrolls_f1         0.0383          nan          nan          nan
+lambda_payrolls_f2        -0.0232          nan          nan          nan
+lambda_retail_sales_f0      -0.5387          nan          nan          nan
+lambda_retail_sales_f1      -0.0721          nan          nan          nan
+lambda_retail_sales_f2       0.0108          nan          nan          nan
+lambda_housing_starts_f0      -0.5127          nan          nan          nan
+lambda_housing_starts_f1      -0.1017          nan          nan          nan
+lambda_housing_starts_f2      -0.1036          nan          nan          nan
+lambda_pmi_manufacturing_f0      -0.4045          nan          nan          nan
+lambda_pmi_manufacturing_f1      -0.3049          nan          nan          nan
+lambda_pmi_manufacturing_f2       0.4353          nan          nan          nan
+lambda_cpi_inflation_f0      -0.1103          nan          nan          nan
+lambda_cpi_inflation_f1      -0.5504          nan          nan          nan
+lambda_cpi_inflation_f2      -0.3576          nan          nan          nan
+phi_00                     0.8070          nan          nan          nan
+phi_01                    -0.0595          nan          nan          nan
+phi_02                     0.0180          nan          nan          nan
+phi_10                    -0.0089          nan          nan          nan
+phi_11                     0.6745          nan          nan          nan
+phi_12                    -0.0192          nan          nan          nan
+phi_20                     0.0349          nan          nan          nan
+phi_21                     0.0856          nan          nan          nan
+phi_22                     0.6868          nan          nan          nan
+sigma2_gdp_growth          0.0994          nan          nan          nan
+sigma2_industrial_production       0.1241          nan          nan          nan
+sigma2_unemployment        0.1025          nan          nan          nan
+sigma2_payrolls            0.1544          nan          nan          nan
+sigma2_retail_sales        0.1550          nan          nan          nan
+sigma2_housing_starts       0.1866          nan          nan          nan
+sigma2_pmi_manufacturing       0.1250          nan          nan          nan
+sigma2_cpi_inflation       0.1118          nan          nan          nan
+======================================================================

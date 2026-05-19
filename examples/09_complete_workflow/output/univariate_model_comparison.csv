@@ -1,0 +1,5 @@
+model,k_params,loglik,aic,bic,delta_aic
+LocalLevel,2,110.082,-216.163,-209.648,0.0
+BSM,4,108.772,-209.544,-196.514,6.619
+BSM+intervention,4,103.245,-198.49,-185.46,17.673000000000002
+LocalLinearTrend,3,97.403,-188.806,-179.033,27.357

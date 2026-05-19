@@ -1,0 +1,46 @@
+#!/bin/bash
+# Runs all FASE 9 complete-workflow solution scripts and reports results.
+#
+# Usage: bash run_solutions.sh
+# Exit code: 0 if every script succeeds, 1 if any fails.
+
+set -u
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+PASS=0
+FAIL=0
+FAILED_SCRIPTS=""
+
+echo "============================================================"
+echo "Running FASE 9 Complete-Workflow solution scripts..."
+echo "============================================================"
+echo ""
+
+for script in sol_01_univariate_workflow.py sol_02_multivariate_workflow.py; do
+    echo ">>> Running $script ..."
+    if python3 "$script"; then
+        PASS=$((PASS + 1))
+        echo ""
+        echo ">>> $script: PASSED"
+    else
+        FAIL=$((FAIL + 1))
+        FAILED_SCRIPTS="$FAILED_SCRIPTS $script"
+        echo ""
+        echo ">>> $script: FAILED"
+    fi
+    echo ""
+done
+
+echo "============================================================"
+echo "Summary: $PASS passed, $FAIL failed"
+if [ $FAIL -gt 0 ]; then
+    echo "Failed scripts:$FAILED_SCRIPTS"
+    echo "============================================================"
+    exit 1
+else
+    echo "All complete-workflow solutions passed!"
+    echo "============================================================"
+    exit 0
+fi

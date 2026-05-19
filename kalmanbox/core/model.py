@@ -76,13 +76,24 @@ class StateSpaceModel(ABC):
 
     # --- Concrete methods ---
 
-    def fit(self, method: str = "mle", **kwargs: object) -> StateSpaceResults:
+    def fit(
+        self,
+        method: str = "mle",
+        maxiter: int = 500,
+        compute_se: bool = True,
+        **kwargs: object,
+    ) -> StateSpaceResults:
         """Fit the model by estimating parameters.
 
         Parameters
         ----------
         method : str
             Estimation method. Currently only 'mle' is supported.
+        maxiter : int
+            Maximum number of optimizer iterations.
+        compute_se : bool
+            Whether to compute standard errors via numerical Hessian.
+            Set to False for faster fitting when SE are not needed.
         **kwargs
             Additional keyword arguments passed to the estimator.
 
@@ -98,7 +109,9 @@ class StateSpaceModel(ABC):
             raise ValueError(msg)
 
         estimator = MLEstimator()
-        return estimator.fit(self, self.endog, **kwargs)
+        return estimator.fit(
+            self, self.endog, maxiter=maxiter, compute_se=compute_se, **kwargs
+        )
 
     def loglike(self, params: NDArray[np.float64]) -> float:
         """Compute log-likelihood for given parameters.

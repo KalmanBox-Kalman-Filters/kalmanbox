@@ -1,0 +1,10 @@
+"metric","value"
+"loglik_fkf",-322.711512172045
+"loglik_kf",-322.711512172045
+"loglik_sqrt",-322.711512172045
+"loglik_info",-322.711512172045
+"max_diff_fkf_kf",7.105427357601e-15
+"max_diff_sqrt_kf",2.8421709430404e-14
+"max_diff_info_kf",1.70530256582424e-13
+"tol",1e-06
+"equivalence_ok",1

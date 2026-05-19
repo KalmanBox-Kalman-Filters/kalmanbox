@@ -171,6 +171,88 @@ class KalmanFilter:
             nobs_effective=nobs_effective,
         )
 
+    def loglike_fast(
+        self,
+        endog: NDArray[np.float64],
+        ssm: StateSpaceRepresentation,
+        n_diffuse: int = 1,
+    ) -> float:
+        """Compute log-likelihood without storing intermediate arrays.
+
+        Optimized for use during MLE optimization where only the scalar
+        log-likelihood value is needed. Computes Cholesky of F once per
+        step and reuses it for gain, log-det, and quadratic form.
+
+        Parameters
+        ----------
+        endog : NDArray
+            Observed data, shape (nobs,) or (nobs, k_endog).
+        ssm : StateSpaceRepresentation
+            State-space model specification.
+        n_diffuse : int
+            Number of initial diffuse observations to skip.
+
+        Returns
+        -------
+        float
+            Total log-likelihood (excluding diffuse observations).
+        """
+        from scipy import linalg as la
+
+        if endog.ndim == 1:
+            endog = endog.reshape(-1, 1)
+
+        nobs = endog.shape[0]
+        T, Z, R, Q, H, c, d = ssm.T, ssm.Z, ssm.R, ssm.Q, ssm.H, ssm.c, ssm.d
+        k_endog = ssm.k_endog
+        log2pi_k = k_endog * np.log(2.0 * np.pi)
+
+        # Pre-compute constants
+        RQR = R @ Q @ R.T
+
+        a = ssm.a1.copy()
+        P = ssm.P1.copy()
+        loglike = 0.0
+
+        for t in range(nobs):
+            y_t = endog[t]
+            is_missing = np.any(np.isnan(y_t))
+
+            if is_missing:
+                a_filt = a
+                P_filt = P
+            else:
+                # Prediction error
+                v = y_t - Z @ a - d
+                ZP = Z @ P
+                F = ZP @ Z.T + H
+                F = (F + F.T) * 0.5  # ensure symmetric inline
+
+                # Single Cholesky of F, reused for gain + loglike
+                try:
+                    L = la.cholesky(F, lower=True)
+                except la.LinAlgError:
+                    L = la.cholesky(F + 1e-8 * np.eye(k_endog), lower=True)
+
+                # Kalman gain: K = P @ Z' @ F^{-1}
+                K = la.cho_solve((L, True), ZP).T
+                a_filt = a + K @ v
+                P_filt = P - K @ ZP
+                P_filt = (P_filt + P_filt.T) * 0.5
+
+                # Log-likelihood contribution (reuse L)
+                if t >= n_diffuse:
+                    log_det_F = 2.0 * float(np.sum(np.log(np.diag(L))))
+                    F_inv_v = la.cho_solve((L, True), v)
+                    loglike += -0.5 * (log2pi_k + log_det_F + float(v @ F_inv_v))
+
+            # Prediction step for t+1
+            a = T @ a_filt + c
+            P = T @ P_filt @ T.T + RQR
+            P = (P + P.T) * 0.5
+
+        return loglike
+
     @staticmethod
     def predict_step(
         a: NDArray[np.float64],

@@ -1,0 +1,301 @@
+/* =========================================================================
+   kalmanbox - Custom Material theme overrides
+   -------------------------------------------------------------------------
+   Visual identity for the foundational Kalman Filter / State-Space library
+   of the NodesEcon ecosystem (chronobox, forecastbox, particlefilterbox).
+   ========================================================================= */
+
+/* ---------- Brand palette --------------------------------------------- */
+:root {
+  --kb-primary:        #2c3e8a;   /* deep indigo - "state" */
+  --kb-primary-light:  #4f63b8;
+  --kb-primary-dark:   #1a2657;
+  --kb-accent:         #6f42c1;   /* purple - "innovation/Bayesian" */
+  --kb-accent-soft:    #b39ddb;
+  --kb-signal:         #00b8a9;   /* teal - "signal/observation" */
+  --kb-noise:          #f6ae2d;   /* amber - "noise/uncertainty" */
+  --kb-error:          #d7263d;
+  --kb-bg-soft:        #f4f6fb;
+  --kb-bg-code:        #f6f8fc;
+  --kb-border:         #e1e6ef;
+  --kb-text:           #1f2640;
+  --kb-text-muted:     #5b6478;
+
+  --md-primary-fg-color:        var(--kb-primary);
+  --md-primary-fg-color--light: var(--kb-primary-light);
+  --md-primary-fg-color--dark:  var(--kb-primary-dark);
+  --md-accent-fg-color:         var(--kb-accent);
+  --md-accent-fg-color--transparent: rgba(111, 66, 193, 0.1);
+
+  --md-typeset-a-color: var(--kb-primary);
+}
+
+/* Slate / dark-mode adjustments */
+[data-md-color-scheme="slate"] {
+  --kb-bg-soft:  #1b2236;
+  --kb-bg-code:  #161c2d;
+  --kb-border:   #2a3350;
+  --kb-text:     #e6e9f2;
+  --kb-text-muted: #aab1c4;
+
+  --md-primary-fg-color:        var(--kb-primary-light);
+  --md-primary-fg-color--light: #7a8fd4;
+  --md-primary-fg-color--dark:  var(--kb-primary);
+  --md-accent-fg-color:         var(--kb-accent-soft);
+  --md-typeset-a-color:         #8fa4e0;
+}
+
+/* ---------- Typography ------------------------------------------------ */
+.md-typeset {
+  font-feature-settings: "kern", "liga", "onum", "tnum";
+}
+
+.md-typeset h1 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  border-bottom: 2px solid var(--md-primary-fg-color);
+  padding-bottom: 0.35rem;
+  margin-top: 0;
+}
+
+.md-typeset h2 {
+  font-weight: 600;
+  margin-top: 2.2rem;
+  letter-spacing: -0.005em;
+}
+
+.md-typeset h3 {
+  font-weight: 600;
+  color: var(--md-primary-fg-color);
+}
+
+.md-typeset h4,
+.md-typeset h5 {
+  color: var(--kb-text-muted);
+  text-transform: none;
+  font-weight: 600;
+}
+
+/* ---------- Code blocks ----------------------------------------------- */
+.md-typeset pre > code,
+.md-typeset code {
+  font-feature-settings: "liga" 0;
+}
+
+.md-typeset .highlight {
+  border-radius: 6px;
+  border: 1px solid var(--kb-border);
+}
+
+.md-typeset code {
+  background: var(--kb-bg-code);
+  border-radius: 3px;
+  padding: 0.1em 0.35em;
+  font-size: 0.86em;
+}
+
+[data-md-color-scheme="slate"] .md-typeset code {
+  background: var(--kb-bg-code);
+  color: #d5d9e6;
+}
+
+/* ---------- Math (MathJax / arithmatex) ------------------------------- */
+.md-typeset .arithmatex {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.2em 0;
+}
+
+mjx-container[jax="CHTML"][display="true"] {
+  margin: 0.85em 0 !important;
+  padding: 0.6em 1em;
+  background: var(--kb-bg-soft);
+  border-left: 3px solid var(--md-primary-fg-color);
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+/* ---------- Admonitions: custom kalmanbox flavors --------------------- */
+.md-typeset .admonition,
+.md-typeset details {
+  border-left: 4px solid var(--md-primary-fg-color);
+  border-radius: 4px;
+  font-size: 0.78rem;
+}
+
+/* "math" admonition – derivations, equations */
+.md-typeset .admonition.math,
+.md-typeset details.math {
+  border-color: var(--kb-primary);
+}
+.md-typeset .math > .admonition-title,
+.md-typeset .math > summary {
+  background-color: rgba(44, 62, 138, 0.1);
+}
+.md-typeset .math > .admonition-title::before,
+.md-typeset .math > summary::before {
+  background-color: var(--kb-primary);
+  -webkit-mask-image: var(--md-admonition-icon--abstract);
+          mask-image: var(--md-admonition-icon--abstract);
+}
+
+/* "ecosystem" admonition – cross-references to chronobox/forecastbox */
+.md-typeset .admonition.ecosystem,
+.md-typeset details.ecosystem {
+  border-color: var(--kb-accent);
+}
+.md-typeset .ecosystem > .admonition-title,
+.md-typeset .ecosystem > summary {
+  background-color: rgba(111, 66, 193, 0.1);
+}
+.md-typeset .ecosystem > .admonition-title::before,
+.md-typeset .ecosystem > summary::before {
+  background-color: var(--kb-accent);
+  -webkit-mask-image: var(--md-admonition-icon--info);
+          mask-image: var(--md-admonition-icon--info);
+}
+
+/* "numerical" admonition – stability / precision warnings */
+.md-typeset .admonition.numerical,
+.md-typeset details.numerical {
+  border-color: var(--kb-noise);
+}
+.md-typeset .numerical > .admonition-title,
+.md-typeset .numerical > summary {
+  background-color: rgba(246, 174, 45, 0.12);
+}
+.md-typeset .numerical > .admonition-title::before,
+.md-typeset .numerical > summary::before {
+  background-color: var(--kb-noise);
+  -webkit-mask-image: var(--md-admonition-icon--warning);
+          mask-image: var(--md-admonition-icon--warning);
+}
+
+/* ---------- Tables ---------------------------------------------------- */
+.md-typeset table:not([class]) {
+  font-size: 0.78rem;
+  border: 1px solid var(--kb-border);
+}
+.md-typeset table:not([class]) th {
+  background: var(--md-primary-fg-color);
+  color: #fff;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.md-typeset table:not([class]) tr:nth-child(2n) {
+  background: var(--kb-bg-soft);
+}
+
+/* ---------- Navigation tabs ------------------------------------------ */
+.md-tabs {
+  background-color: var(--md-primary-fg-color--dark);
+}
+.md-tabs__link {
+  font-weight: 500;
+  font-size: 0.78rem;
+  opacity: 0.85;
+  transition: opacity 120ms ease, font-weight 120ms ease;
+}
+.md-tabs__link:hover,
+.md-tabs__link--active {
+  opacity: 1;
+  font-weight: 600;
+}
+
+/* ---------- Hero card on the landing page ---------------------------- */
+.kb-hero {
+  background: linear-gradient(135deg, var(--kb-primary), var(--kb-accent));
+  color: #fff;
+  padding: 2rem 2rem 1.4rem;
+  border-radius: 8px;
+  margin: 1rem 0 1.6rem;
+  box-shadow: 0 6px 20px rgba(44, 62, 138, 0.18);
+}
+.kb-hero h1,
+.kb-hero h2 {
+  color: #fff;
+  border: none;
+  margin: 0 0 0.4rem;
+}
+.kb-hero p {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.95rem;
+  margin-bottom: 0;
+}
+.kb-hero .kb-tagline {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.2em 0.7em;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 0.8rem;
+}
+
+/* ---------- Ecosystem badge ------------------------------------------ */
+.kb-ecosystem-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  background: var(--md-accent-fg-color--transparent);
+  color: var(--md-accent-fg-color);
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 0.15em 0.6em;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Grid cards (used on landing & section indexes) ----------- */
+.md-typeset .grid.cards > :is(ul, ol) > li,
+.md-typeset .grid > .card {
+  border: 1px solid var(--kb-border);
+  border-radius: 6px;
+  transition: border-color 150ms ease, transform 150ms ease,
+              box-shadow 150ms ease;
+}
+.md-typeset .grid.cards > :is(ul, ol) > li:hover,
+.md-typeset .grid > .card:hover {
+  border-color: var(--md-primary-fg-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(44, 62, 138, 0.1);
+}
+
+/* ---------- API mkdocstrings tweaks ---------------------------------- */
+.doc-class .doc-heading,
+.doc-function .doc-heading {
+  border-left: 3px solid var(--md-primary-fg-color);
+  padding-left: 0.6em;
+  background: var(--kb-bg-soft);
+  border-radius: 0 4px 4px 0;
+}
+.doc-signature {
+  font-family: var(--md-code-font, monospace);
+  font-size: 0.82rem;
+}
+.doc-symbol {
+  border-radius: 3px;
+  padding: 0.1em 0.35em;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.doc-symbol-class { background: var(--kb-primary); color: #fff; }
+.doc-symbol-function { background: var(--kb-accent); color: #fff; }
+.doc-symbol-method { background: var(--kb-signal); color: #fff; }
+.doc-symbol-attribute { background: var(--kb-noise); color: #1f2640; }
+
+/* ---------- Footer ---------------------------------------------------- */
+.md-footer-meta {
+  background: var(--kb-primary-dark);
+}
+
+/* ---------- Print ----------------------------------------------------- */
+@media print {
+  .kb-hero { background: none; color: #000; box-shadow: none; }
+  .md-typeset h1 { page-break-after: avoid; }
+}

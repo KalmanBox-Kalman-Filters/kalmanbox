@@ -1,94 +1,371 @@
-site_name: KalmanBox
+site_name: kalmanbox
 site_url: https://kalmanbox.nodesecon.com
-site_description: State-space models and Kalman filtering for time series analysis
+site_description: >-
+  Foundational library of Kalman Filter and State-Space Models for the
+  NodesEcon ecosystem. Powers chronobox, forecastbox and particlefilterbox.
+site_author: NodesEcon
+copyright: Copyright &copy; NodesEcon. Distributed under the MIT License.
+
 repo_url: https://github.com/nodesecon/kalmanbox
 repo_name: nodesecon/kalmanbox
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+site_dir: site
+strict: false
+use_directory_urls: true
 
 theme:
   name: material
+  language: en
+  logo: assets/images/logo.svg
+  favicon: assets/images/favicon.svg
+  custom_dir: null
   palette:
-    - scheme: default
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
       primary: indigo
-      accent: blue
+      accent: deep purple
       toggle:
-        icon: material/brightness-7
+        icon: material/weather-night
         name: Switch to dark mode
-    - scheme: slate
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
       primary: indigo
-      accent: blue
+      accent: deep purple
       toggle:
-        icon: material/brightness-4
+        icon: material/weather-sunny
         name: Switch to light mode
   features:
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
     - navigation.expand
+    - navigation.path
+    - navigation.indexes
     - navigation.top
+    - navigation.tracking
+    - navigation.footer
+    - toc.follow
+    - search.highlight
+    - search.share
+    - search.suggest
     - content.code.copy
     - content.code.annotate
-    - search.highlight
-    - search.suggest
+    - content.tabs.link
+    - content.tooltips
+    - content.action.edit
+    - content.action.view
   icon:
     repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+    admonition:
+      note: octicons/tag-16
+      abstract: octicons/checklist-16
+      info: octicons/info-16
+      tip: octicons/squirrel-16
+      success: octicons/check-16
+      question: octicons/question-16
+      warning: octicons/alert-16
+      failure: octicons/x-circle-16
+      danger: octicons/zap-16
+      bug: octicons/bug-16
+      example: octicons/beaker-16
+      quote: octicons/quote-16
 
-nav:
-  - Home: index.md
-  - Getting Started:
-    - Installation: getting-started/installation.md
-    - Quickstart: getting-started/quickstart.md
-    - Key Concepts: getting-started/key-concepts.md
-  - User Guide:
-    - Local Level: user-guide/local-level/overview.md
-    - BSM: user-guide/bsm/overview.md
-    - UCM: user-guide/ucm/overview.md
-    - Dynamic Factor: user-guide/dynamic-factor/overview.md
-    - TVP Regression: user-guide/tvp/overview.md
-    - ARIMA-SSM: user-guide/arima-ssm/overview.md
-    - Custom Models: user-guide/custom/overview.md
-  - API Reference:
-    - Core: api/core.md
-    - Filters: api/filters.md
-    - Models: api/models.md
-    - Estimation: api/estimation.md
-    - Datasets: api/datasets.md
-    - Experiment: api/experiment.md
-    - CLI: api/cli.md
-  - Theory:
-    - State-Space Models: theory/state-space-theory.md
-    - Kalman Filter: theory/kalman-filter-derivation.md
-  - Benchmarks: benchmarks/performance.md
-
-plugins:
-  - search
-  - mkdocstrings:
-      handlers:
-        python:
-          options:
-            show_source: false
-            docstring_style: numpy
-            show_root_heading: true
-            heading_level: 3
-            members_order: source
-            show_signature_annotations: true
-
-markdown_extensions:
-  - admonition
-  - pymdownx.details
-  - pymdownx.superfences
-  - pymdownx.highlight:
-      anchor_linenums: true
-  - pymdownx.inlinehilite
-  - pymdownx.arithmatex:
-      generic: true
-  - pymdownx.tabbed:
-      alternate_style: true
-  - tables
-  - attr_list
-  - md_in_html
-  - footnotes
-  - toc:
-      permalink: true
+extra_css:
+  - assets/css/custom.css
 
 extra_javascript:
   - https://polyfill.io/v3/polyfill.min.js?features=es6
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/nodesecon/kalmanbox
+      name: GitHub
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/kalmanbox/
+      name: PyPI
+  version:
+    provider: mike
+    default: stable
+  ecosystem:
+    - name: kalmanbox
+      role: Foundation - Kalman Filter & State-Space Models
+    - name: chronobox
+      role: Time series toolbox built on kalmanbox
+    - name: forecastbox
+      role: Forecasting framework leveraging kalmanbox
+    - name: particlefilterbox
+      role: Sequential Monte Carlo extending kalmanbox
+
+nav:
+  - Home: index.md
+
+  - Getting Started:
+    - getting-started/index.md
+    - Installation: getting-started/installation.md
+    - Quickstart: getting-started/quickstart.md
+    - Key Concepts: getting-started/key-concepts.md
+    - Core Concepts: getting-started/core-concepts.md
+    - Choosing a Model: getting-started/choosing-model.md
+    - Ecosystem: getting-started/ecosystem.md
+    - Migration Guide: getting-started/migration.md
+
+  - User Guide:
+    - user-guide/index.md
+    - Kalman Filtering:
+      - user-guide/kalman/index.md
+      - Kalman Filter: user-guide/kalman/kalman-filter.md
+      - RTS Smoother: user-guide/kalman/rts-smoother.md
+      - Forecasting: user-guide/kalman/forecasting.md
+      - Missing Data: user-guide/kalman/missing-data.md
+      - Diffuse Initialization: user-guide/kalman/diffuse.md
+      - MLE Estimation: user-guide/kalman/mle.md
+    - Structural Models:
+      - user-guide/structural/index.md
+      - Local Level: user-guide/structural/local-level.md
+      - Local Linear Trend: user-guide/structural/local-linear-trend.md
+      - Basic Structural Model (BSM): user-guide/structural/bsm.md
+      - Unobserved Components (UCM): user-guide/structural/ucm.md
+      - Cycle Component: user-guide/structural/cycle.md
+      - ARIMA in State-Space: user-guide/structural/arima-ssm.md
+    - Advanced Models:
+      - user-guide/advanced/index.md
+      - Dynamic Factor Model (DFM): user-guide/advanced/dfm.md
+      - Time-Varying Parameters (TVP): user-guide/advanced/tvp.md
+      - EM Algorithm: user-guide/advanced/em.md
+      - Multivariate Models: user-guide/advanced/multivariate.md
+      - Regression in State-Space: user-guide/advanced/regression-ssm.md
+      - Custom State-Space Models: user-guide/advanced/custom.md
+    - Alternative Filters:
+      - user-guide/filters/index.md
+      - Extended Kalman Filter (EKF): user-guide/filters/ekf.md
+      - Unscented Kalman Filter (UKF): user-guide/filters/ukf.md
+      - Square-Root Filter: user-guide/filters/square-root.md
+      - Information Filter: user-guide/filters/information.md
+      - Ensemble Kalman Filter (EnKF): user-guide/filters/ensemble.md
+      - Filter Comparison: user-guide/filters/comparison.md
+    - Bayesian Estimation:
+      - user-guide/bayesian/index.md
+      - Gibbs Sampling: user-guide/bayesian/gibbs.md
+      - Forward-Filter Backward-Sample (FFBS): user-guide/bayesian/ffbs.md
+      - Priors and Hyperparameters: user-guide/bayesian/priors.md
+      - Posterior Diagnostics: user-guide/bayesian/posterior-diagnostics.md
+    - Experiment Framework: user-guide/experiment.md
+
+  - Theory:
+    - theory/index.md
+    - Comprehensive Theory:
+      - State-Space Theory: theory/state-space-theory.md
+      - Kalman Filter Theory: theory/kalman-theory.md
+      - Smoothing Theory: theory/smoothing-theory.md
+      - MLE Theory: theory/mle-theory.md
+      - Structural Models Theory: theory/structural-theory.md
+    - Derivations:
+      - Kalman Filter Derivation: theory/kalman-filter-derivation.md
+      - RTS Smoother Derivation: theory/rts-derivation.md
+      - Likelihood Computation: theory/likelihood.md
+    - Advanced Topics:
+      - Numerical Stability: theory/numerical-stability.md
+      - Identifiability: theory/identifiability.md
+      - DFM Theory: theory/dfm-theory.md
+      - Nonlinear Filter Theory: theory/nonlinear-theory.md
+      - Bayesian Theory: theory/bayesian-theory.md
+      - Diffuse Initialization Theory: theory/diffuse-theory.md
+    - References: theory/references.md
+
+  - Diagnostics:
+    - diagnostics/index.md
+    - Innovation Tests: diagnostics/innovation-tests.md
+    - Residual Analysis: diagnostics/residuals.md
+    - Information Criteria: diagnostics/information-criteria.md
+    - Likelihood Ratio Test: diagnostics/likelihood-ratio.md
+    - Cross-Validation: diagnostics/cross-validation.md
+    - CUSUM & Stability: diagnostics/cusum.md
+    - Prediction Error Analysis: diagnostics/prediction-error.md
+    - Convergence Diagnostics: diagnostics/convergence.md
+    - State Smoothness: diagnostics/state-smoothness.md
+    - Auxiliary Residuals: diagnostics/auxiliary-residuals.md
+    - Filter Comparison: diagnostics/filter-comparison.md
+    - Consistency Tests: diagnostics/consistency.md
+
+  - Visualization:
+    - visualization/index.md
+    - State Plots: visualization/state-plots.md
+    - Component Plots: visualization/component-plots.md
+    - Innovation Plots: visualization/innovation-plots.md
+    - Filter Comparison Plots: visualization/filter-plots.md
+    - Plotting Filtered States: visualization/filtered-states.md
+    - Plotting Smoothed States: visualization/smoothed-states.md
+    - Component Decomposition: visualization/components.md
+    - Forecast Fan Charts: visualization/forecasts.md
+    - Diagnostic Plots: visualization/diagnostics.md
+    - Factor Plots (DFM): visualization/factor-plots.md
+    - TVP Coefficient Plots: visualization/tvp-plots.md
+    - Themes: visualization/themes.md
+
+  - Tutorials:
+    - tutorials/index.md
+    - "Fundamentals (Beginner)": tutorials/fundamentals.md
+    - "BSM: Structural Decomposition": tutorials/bsm.md
+    - "UCM: Custom Components": tutorials/ucm.md
+    - "DFM: Dynamic Factor Model": tutorials/dfm.md
+    - "TVP: Time-Varying Parameters": tutorials/tvp.md
+    - "Nonlinear Filters (EKF/UKF/EnKF)": tutorials/nonlinear.md
+    - "Bayesian Estimation (Gibbs/FFBS)": tutorials/bayesian.md
+    - Nile River - Local Level: tutorials/nile-local-level.md
+    - Airline Passengers - BSM: tutorials/airline-bsm.md
+    - US Macro - Dynamic Factor: tutorials/us-macro-dfm.md
+    - Time-Varying CAPM: tutorials/tvp-capm.md
+    - Nonlinear Tracking with EKF/UKF: tutorials/nonlinear-tracking.md
+    - Bayesian Estimation Walkthrough: tutorials/bayesian-walkthrough.md
+
+  - API Reference:
+    - api/index.md
+    - Core: api/core.md
+    - Structural Models: api/structural.md
+    - Advanced Models: api/advanced.md
+    - Alternative Filters: api/filters.md
+    - Smoothers: api/smoothers.md
+    - Models: api/models.md
+    - Estimation: api/estimation.md
+    - Diagnostics: api/diagnostics.md
+    - Visualization: api/visualization.md
+    - Reports: api/reports.md
+    - Datasets: api/datasets.md
+    - Simulation: api/simulation.md
+    - Experiment: api/experiment.md
+    - Utilities: api/utils.md
+    - CLI: api/cli.md
+
+  - Reports & CLI:
+    - api/reports.md
+    - api/cli.md
+
+  - Benchmarks:
+    - benchmarks/index.md
+    - Kalman Filter: benchmarks/kalman.md
+    - Structural Models: benchmarks/structural.md
+    - Dynamic Factor Model: benchmarks/dfm.md
+    - Library Comparison: benchmarks/comparison.md
+    - Performance: benchmarks/performance.md
+    - Memory Profile: benchmarks/memory.md
+    - Comparisons: benchmarks/comparisons.md
+
+  - FAQ:
+    - faq/index.md
+    - General: faq/general.md
+    - Advanced: faq/advanced.md
+    - Troubleshooting: faq/troubleshooting.md
+    - Models: faq/models.md
+    - Estimation: faq/estimation.md
+    - Numerical Issues: faq/numerical.md
+
+  - Contributing:
+    - contributing/index.md
+    - Contributing Guide: contributing/contributing.md
+    - Development Setup: contributing/setup.md
+    - Code Style: contributing/style.md
+    - Testing: contributing/testing.md
+    - Documentation: contributing/documentation.md
+    - Release Process: contributing/release.md
+    - Changelog: contributing/changelog.md
+    - Roadmap: contributing/roadmap.md
+    - Code of Conduct: contributing/code-of-conduct.md
+
+plugins:
+  - search:
+      lang: en
+      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - autorefs
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [..]
+          import:
+            - https://docs.python.org/3/objects.inv
+            - https://numpy.org/doc/stable/objects.inv
+            - https://docs.scipy.org/doc/scipy/objects.inv
+            - https://pandas.pydata.org/docs/objects.inv
+          options:
+            docstring_style: numpy
+            docstring_section_style: spacy
+            show_source: false
+            show_root_heading: true
+            show_root_full_path: false
+            show_object_full_path: false
+            show_category_heading: true
+            show_if_no_docstring: false
+            show_signature: true
+            show_signature_annotations: true
+            separate_signature: true
+            line_length: 88
+            merge_init_into_class: true
+            show_bases: true
+            show_submodules: false
+            heading_level: 3
+            members_order: source
+            group_by_category: true
+            filters:
+              - "!^_"
+              - "^__init__$"
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      permalink_title: Anchor link to this section
+      toc_depth: 4
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+      auto_title: false
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: nodesecon
+      repo: kalmanbox
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+watch:
+  - kalmanbox

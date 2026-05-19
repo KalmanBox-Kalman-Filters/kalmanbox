@@ -1,0 +1,11 @@
+"metric","value"
+"loglik_ekf",-97.0083082842506
+"loglik_ukf",-58.6434878354688
+"rmse_ekf_theta",0.269853574296389
+"rmse_ekf_theta_dot",0.750082878923879
+"rmse_ukf_theta",0.157489829726731
+"rmse_ukf_theta_dot",0.426312924639468
+"rmse_kfas_lin_theta",0.864904061552218
+"rmse_kfas_lin_theta_dot",2.43927758268486
+"n_obs",200
+"dt",0.1

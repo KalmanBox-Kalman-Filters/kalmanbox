@@ -1,0 +1,13 @@
+"metric","value"
+"n_obs",144
+"n_missing",22
+"pct_missing",15.2777777777778
+"loglik_complete",229.365612038832
+"loglik_missing",183.278502960351
+"rmse_imputation",0.0394493876616076
+"mae_imputation",0.0323907198005232
+"coverage_95_imputation",0.818181818181818
+"kalman_width_mean",0.0540597810410102
+"sim_width_mean",0.0530849786956576
+"width_ratio_sim_over_kalman",0.981968067080904
+"n_sim_draws",200

@@ -1,0 +1,6 @@
+Feature,kalmanbox,statsmodels,R (KFAS)
+log-likelihood (DFM K=1),-1951.186,-1958.431,(see FASE9.4 report)
+Nowcasting support,yes (Kalman smoother on NaN),yes (MLEModel with missing),yes (SSModel / NAs)
+Variance decomposition,built-in .variance_decomposition,via loadings + error cov,via Z matrix + diag(H)
+MLE optimiser,scipy L-BFGS-B,scipy L-BFGS-B,optim BFGS
+Exact diffuse init,approximate (large-variance prior),exact (Koopman 1997),exact (Koopman 1997)

@@ -1,0 +1,11 @@
+"metric","value"
+"logLik",-1304.30763992057
+"AIC",2630.61527984113
+"phi",0.813421863447254
+"lambda_gdp",0.563304391720507
+"rmse_dfm",0.296602671445817
+"rmse_naive_mean",1.00352365626931
+"rel_improvement_pct",70.4438784683497
+"corr_nowcast_gdp",0.956073574181265
+"n_gdp_obs",96
+"convergence",0

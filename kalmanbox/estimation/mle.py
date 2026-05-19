@@ -31,6 +31,7 @@ class MLEstimator:
         endog: NDArray[np.float64],
         method: str = "L-BFGS-B",
         maxiter: int = 500,
+        compute_se: bool = True,
         **kwargs: object,
     ) -> StateSpaceResults:
         """Estimate model parameters via MLE.
@@ -68,8 +69,7 @@ class MLEstimator:
             try:
                 constrained = model.transform_params(unconstrained_params)
                 ssm = model._build_ssm(constrained)
-                output = kf.filter(endog, ssm)
-                return -float(np.sum(output.loglike_obs[n_diffuse:]))
+                return -kf.loglike_fast(endog, ssm, n_diffuse=n_diffuse)
             except Exception:
                 return 1e10  # Return large value on failure
 
@@ -86,7 +86,10 @@ class MLEstimator:
         optimal_params = model.transform_params(optimal_unconstrained)
 
         # Compute standard errors via numerical Hessian
-        se = self.standard_errors(neg_loglike, optimal_unconstrained, model)
+        if compute_se:
+            se = self.standard_errors(neg_loglike, optimal_unconstrained, model)
+        else:
+            se = np.full(len(optimal_params), np.nan)
 
         # Run filter + smoother with optimal params
         ssm = model._build_ssm(optimal_params)

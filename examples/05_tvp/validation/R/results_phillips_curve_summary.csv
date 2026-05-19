@@ -1,0 +1,17 @@
+"metric","value"
+"logLik",-60.535409457339
+"V_sigma2_obs",0.498929492738034
+"W_alpha",7.55170014483223e-08
+"W_beta",3.46835298809488e-11
+"ols_alpha",0.0650479331912591
+"ols_beta",-0.0104162166560811
+"ols_nairu",6.24487137115026
+"mean_nairu",6.24442806745987
+"min_nairu",6.2407259089059
+"max_nairu",6.25118728407101
+"frac_nairu_in_3_8",1
+"frac_neg_beta",1
+"mean_beta_pre_1990",-0.0104275078853703
+"mean_beta_post_1990",-0.0104277116028311
+"n_obs",255
+"convergence",0
