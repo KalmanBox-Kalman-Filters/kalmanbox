@@ -26,10 +26,9 @@ mkdocs:
   fail_on_warning: false
 
 # Optional formats besides HTML
+# Note: PDF/ePub are only supported for Sphinx projects, not MkDocs.
 formats:
-  - pdf
   - htmlzip
-  - epub
 
 # Install project + docs extras so mkdocstrings can introspect kalmanbox
 python:
