@@ -99,7 +99,7 @@ def neg_loglike(psi: np.ndarray) -> float:
 result = minimize(neg_loglike, x0=psi0, method="L-BFGS-B")
 ```
 
-The `MLEEstimator` class wraps this pattern and adds gradient computation,
+The `MLEstimator` class wraps this pattern and adds gradient computation,
 multiple starts, and result post-processing.
 
 ### Supported methods
@@ -145,14 +145,14 @@ sigma2_eps   471.44    181.96     2.591   0.0096
 =============================================================
 ```
 
-### Low-level: `MLEEstimator`
+### Low-level: `MLEstimator`
 
 For custom models:
 
 ```python
 import numpy as np
 from kalmanbox import KalmanFilter, StateSpaceRepresentation
-from kalmanbox.estimation import MLEEstimator, ParameterSpec
+from kalmanbox.estimation import MLEstimator, ParameterSpec
 
 rng = np.random.default_rng(1)
 n   = 200
@@ -168,7 +168,7 @@ def build_model(params: np.ndarray) -> KalmanFilter:
     ssr = StateSpaceRepresentation(T=T, Z=Z, R=R, Q=Q, H=H)
     return KalmanFilter(ssr, initialization="diffuse")
 
-estimator = MLEEstimator(
+estimator = MLEstimator(
     model_factory=build_model,
     param_spec=ParameterSpec(
         names=["sigma_eta", "sigma_eps"],

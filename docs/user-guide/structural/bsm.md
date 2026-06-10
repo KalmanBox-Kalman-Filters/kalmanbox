@@ -467,7 +467,7 @@ model, and additionally delivers an interpretable decomposition.
 
 ## API reference
 
-::: kalmanbox.structural.BSM
+::: kalmanbox.models.bsm.BasicStructuralModel
     options:
       heading_level: 3
       show_source: false

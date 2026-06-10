@@ -76,8 +76,8 @@ $$
 $$
 
 where $p = \dim y_t$ and $\theta$ collects the free system parameters.
-This is the objective used by [`MLEEstimator`][kalmanbox.estimation.mle.MLEEstimator]
-and [`EMEstimator`][kalmanbox.advanced.EMEstimator] for parameter estimation.
+This is the objective used by [`MLEstimator`][kalmanbox.estimation.mle.MLEstimator]
+and [`EMEstimator`][kalmanbox.estimation.em.EMEstimator] for parameter estimation.
 
 !!! note "Diffuse observations excluded"
 
@@ -440,7 +440,7 @@ loglike = out.loglike
 Estimate free parameters by maximizing the prediction-error log-likelihood:
 
 ```python
-from kalmanbox.estimation import MLEEstimator
+from kalmanbox.estimation import MLEstimator
 
 def build_ssr(params):
     sigma_eta, sigma_eps = np.exp(params)   # log-parameterization
@@ -452,7 +452,7 @@ def build_ssr(params):
         H=np.array([[sigma_eps**2]]),
     )
 
-mle = MLEEstimator(
+mle = MLEstimator(
     build_ssr=build_ssr,
     initialization="diffuse",
     params0=np.log([0.5, 1.0]),   # starting values on log scale

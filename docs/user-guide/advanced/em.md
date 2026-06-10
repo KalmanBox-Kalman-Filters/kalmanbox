@@ -571,7 +571,7 @@ results_final = em.fit(
 
 ## 11. API Reference
 
-::: kalmanbox.advanced.EMEstimator
+::: kalmanbox.estimation.em.EMEstimator
     options:
       heading_level: 3
       show_source: false

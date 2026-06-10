@@ -402,7 +402,7 @@ print(f"LR stat = {lr_stat:.3f},  p-value = {p_val:.4f}")
 
 ## API reference
 
-::: kalmanbox.structural.LocalLinearTrend
+::: kalmanbox.models.local_linear_trend.LocalLinearTrend
     options:
       heading_level: 3
       show_source: false

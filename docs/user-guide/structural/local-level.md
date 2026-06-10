@@ -402,7 +402,7 @@ For seasonal series, go directly to [BSM](bsm.md).
 
 ## API reference
 
-::: kalmanbox.structural.LocalLevel
+::: kalmanbox.models.local_level.LocalLevel
     options:
       heading_level: 3
       show_source: false

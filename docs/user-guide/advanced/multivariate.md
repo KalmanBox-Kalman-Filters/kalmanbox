@@ -543,12 +543,12 @@ print(corr_h1)
 
 ## API Reference
 
-::: kalmanbox.advanced.MultivariateSSM
-    options:
-      heading_level: 3
-      show_source: false
+Multivariate and VAR systems are built with the general-purpose
+[`CustomStateSpace`][kalmanbox.models.custom.CustomStateSpace] model, which lets
+you specify arbitrary `Z`, `T`, `R`, `Q`, and `H` matrices (including the
+full-`H` and companion-form constructions shown above).
 
-::: kalmanbox.advanced.VARStateSpace
+::: kalmanbox.models.custom.CustomStateSpace
     options:
       heading_level: 3
       show_source: false

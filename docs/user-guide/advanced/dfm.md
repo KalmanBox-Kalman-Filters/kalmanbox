@@ -770,7 +770,7 @@ print(f"Max off-diagonal |corr|: {np.max(np.abs(resid_corr - np.eye(resid_corr.s
 
 ## 12. API Reference
 
-::: kalmanbox.advanced.DFM
+::: kalmanbox.models.dynamic_factor.DynamicFactorModel
     options:
       heading_level: 3
       show_source: false

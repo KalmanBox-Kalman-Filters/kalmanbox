@@ -474,7 +474,7 @@ for cross-coefficient drift correlation.
 
 ## 11. API Reference
 
-::: kalmanbox.advanced.TVP
+::: kalmanbox.models.tvp.TimeVaryingParameters
     options:
       heading_level: 3
       show_source: false

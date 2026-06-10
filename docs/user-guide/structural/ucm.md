@@ -409,7 +409,7 @@ and in [Cycle](cycle.md#state-space-representation) for the cycle.
 
 ## API reference
 
-::: kalmanbox.structural.UCM
+::: kalmanbox.models.ucm.UnobservedComponents
     options:
       heading_level: 3
       show_source: false
