@@ -74,14 +74,7 @@ def plot_factors(
     if n_panels == 1:
         axes = [axes]
 
-    t = np.arange(n_time)
-    time_index = getattr(results, "time_index", None)
-    if time_index is not None:
-        import contextlib
-
-        with contextlib.suppress(ValueError, TypeError):
-            t = np.asarray(time_index)
-
+    t = _resolve_factor_time_axis(results, n_time)
     series_colors = colors.series
 
     for panel_idx, factor_idx in enumerate(factors):
@@ -91,10 +84,7 @@ def plot_factors(
         ax.plot(t, factor_data[:, factor_idx], color=color, linewidth=theme_config.line_width)
         ax.axhline(y=0, color=colors.text, linewidth=0.5, alpha=0.3)
 
-        if factor_names and panel_idx < len(factor_names):
-            label = factor_names[panel_idx]
-        else:
-            label = f"Factor {factor_idx + 1}"
+        label = _factor_label(factor_names, panel_idx, factor_idx)
         ax.set_ylabel(label, fontsize=theme_config.fonts.label_size)
 
     axes[-1].set_xlabel("Time", fontsize=theme_config.fonts.label_size)
@@ -104,6 +94,29 @@ def plot_factors(
     fig.tight_layout()
 
     return fig
+
+
+def _resolve_factor_time_axis(results: Any, n_time: int) -> NDArray[Any]:
+    """Build the time axis, preferring a `time_index` attribute if usable."""
+    t: NDArray[Any] = np.arange(n_time)
+    time_index = getattr(results, "time_index", None)
+    if time_index is not None:
+        import contextlib
+
+        with contextlib.suppress(ValueError, TypeError):
+            t = np.asarray(time_index)
+    return t
+
+
+def _factor_label(
+    factor_names: Sequence[str] | None,
+    panel_idx: int,
+    factor_idx: int,
+) -> str:
+    """Resolve the y-axis label for a factor panel."""
+    if factor_names and panel_idx < len(factor_names):
+        return factor_names[panel_idx]
+    return f"Factor {factor_idx + 1}"
 
 
 def plot_loadings(
@@ -171,21 +184,8 @@ def plot_loadings(
     ax.set_yticks(np.arange(n_series))
     ax.set_yticklabels(series_names[:n_series], fontsize=theme_config.fonts.tick_size)
 
-    # Annotate cells
     if annotate:
-        for i in range(n_series):
-            for j in range(n_factors):
-                val = loadings[i, j]
-                text_color = "white" if abs(val) > vmax * 0.6 else "black"
-                ax.text(
-                    j,
-                    i,
-                    f"{val:.2f}",
-                    ha="center",
-                    va="center",
-                    color=text_color,
-                    fontsize=theme_config.fonts.annotation_size,
-                )
+        _annotate_loadings(ax, loadings, n_series, n_factors, vmax, theme_config)
 
     fig.colorbar(im, ax=ax, shrink=0.8, label="Loading")
 
@@ -194,6 +194,30 @@ def plot_loadings(
     fig.tight_layout()
 
     return fig
+
+
+def _annotate_loadings(
+    ax: Any,
+    loadings: NDArray[np.float64],
+    n_series: int,
+    n_factors: int,
+    vmax: float,
+    theme_config: Any,
+) -> None:
+    """Write loading values into the heatmap cells."""
+    for i in range(n_series):
+        for j in range(n_factors):
+            val = loadings[i, j]
+            text_color = "white" if abs(val) > vmax * 0.6 else "black"
+            ax.text(
+                j,
+                i,
+                f"{val:.2f}",
+                ha="center",
+                va="center",
+                color=text_color,
+                fontsize=theme_config.fonts.annotation_size,
+            )
 
 
 def plot_variance_decomposition(

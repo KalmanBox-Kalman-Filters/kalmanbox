@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 from numpy.typing import NDArray
@@ -111,16 +111,11 @@ def auxiliary_residuals(
         v_t = v[t]
         K_t = K[t]
 
-        # F_t inverse
-        if v.shape[1] == 1:
-            F_inv = np.array([[1.0 / F_t[0, 0]]]) if F_t[0, 0] > 0 else np.zeros((1, 1))
-        else:
-            try:
-                F_inv = np.linalg.inv(F_t)
-            except np.linalg.LinAlgError:
-                r_next = T.T @ r_next
-                N_next = T.T @ N_next @ T
-                continue
+        F_inv = _invert_forecast_cov(F_t, univariate=v.shape[1] == 1)
+        if F_inv is None:
+            r_next = T.T @ r_next
+            N_next = T.T @ N_next @ T
+            continue
 
         # L_t = T - K_t Z
         L_t = T - K_t @ Z
@@ -131,34 +126,70 @@ def auxiliary_residuals(
         # N_{t-1} = Z' F_t^{-1} Z + L_t' N_t L_t
         N_curr = Z.T @ F_inv @ Z + L_t.T @ N_next @ L_t
 
-        # Observation disturbance (univariate simplification)
         if v.shape[1] == 1:
-            h = H[0, 0]
-            f_val = F_t[0, 0]
-            if f_val > 0 and h > 0:
-                e_hat = h * (F_inv @ v_t - K_t.T @ r_next)
-                D_t = F_inv + K_t.T @ N_next @ K_t
-                var_e = h - h**2 * D_t[0, 0]
-                if var_e > 1e-10:
-                    obs_residuals[t] = float(e_hat[0]) / np.sqrt(float(var_e))
+            obs_residuals[t] = _obs_disturbance(H, F_t, F_inv, v_t, K_t, r_next, N_next)
 
-        # State disturbance
-        # eta_hat = Q R' r_t
-        eta_hat = Q @ R.T @ r_next
-        # Var(eta_hat) = Q - Q R' N_t R Q
-        var_eta = Q - Q @ R.T @ N_next @ R @ Q
-        if var_eta.shape[0] == 1:
-            if var_eta[0, 0] > 1e-10:
-                state_residuals[t] = float(eta_hat[0]) / np.sqrt(float(var_eta[0, 0]))
-        else:
-            diag_var = np.diag(var_eta)
-            if np.all(diag_var > 1e-10):
-                state_residuals[t] = float(np.linalg.norm(eta_hat / np.sqrt(diag_var)))
+        state_residuals[t] = _state_disturbance(Q, R, r_next, N_next)
 
         r_next = r_curr
         N_next = N_curr
 
     return obs_residuals, state_residuals
+
+
+def _invert_forecast_cov(
+    F_t: NDArray[np.float64], *, univariate: bool
+) -> NDArray[np.float64] | None:
+    """Invert the forecast covariance, returning None if not invertible."""
+    if univariate:
+        if F_t[0, 0] > 0:
+            return np.array([[1.0 / F_t[0, 0]]])
+        return None
+    try:
+        return cast("NDArray[np.float64]", np.linalg.inv(F_t))
+    except np.linalg.LinAlgError:
+        return None
+
+
+def _obs_disturbance(
+    H: NDArray[np.float64],
+    F_t: NDArray[np.float64],
+    F_inv: NDArray[np.float64],
+    v_t: NDArray[np.float64],
+    K_t: NDArray[np.float64],
+    r_next: NDArray[np.float64],
+    N_next: NDArray[np.float64],
+) -> float:
+    """Standardized observation disturbance (univariate simplification)."""
+    h = H[0, 0]
+    f_val = F_t[0, 0]
+    if f_val > 0 and h > 0:
+        e_hat = h * (F_inv @ v_t - K_t.T @ r_next)
+        D_t = F_inv + K_t.T @ N_next @ K_t
+        var_e = h - h**2 * D_t[0, 0]
+        if var_e > 1e-10:
+            return float(e_hat[0]) / np.sqrt(float(var_e))
+    return np.nan
+
+
+def _state_disturbance(
+    Q: NDArray[np.float64],
+    R: NDArray[np.float64],
+    r_next: NDArray[np.float64],
+    N_next: NDArray[np.float64],
+) -> float:
+    """Standardized state disturbance residual."""
+    # eta_hat = Q R' r_t ; Var(eta_hat) = Q - Q R' N_t R Q
+    eta_hat = Q @ R.T @ r_next
+    var_eta = Q - Q @ R.T @ N_next @ R @ Q
+    if var_eta.shape[0] == 1:
+        if var_eta[0, 0] > 1e-10:
+            return float(eta_hat[0]) / np.sqrt(float(var_eta[0, 0]))
+        return np.nan
+    diag_var = np.diag(var_eta)
+    if np.all(diag_var > 1e-10):
+        return float(np.linalg.norm(eta_hat / np.sqrt(diag_var)))
+    return np.nan
 
 
 def recursive_residuals(

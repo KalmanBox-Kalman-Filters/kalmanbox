@@ -225,26 +225,39 @@ def _parse_forecast_result(fc_result: Any) -> dict[str, NDArray[np.float64]] | N
     if fc_result is None:
         return None
 
-    # If it's a dict-like
     if isinstance(fc_result, dict):
-        mean = fc_result.get("mean", fc_result.get("forecast"))
-        if mean is not None:
-            data: dict[str, NDArray[np.float64]] = {
-                "mean": np.asarray(mean, dtype=np.float64).ravel(),
-            }
-            se = fc_result.get("se", fc_result.get("se_mean", fc_result.get("std")))
-            if se is not None:
-                data["se"] = np.asarray(se, dtype=np.float64).ravel()
-            return data
+        return _parse_forecast_dict(fc_result)
 
-    # If it has attributes
-    mean = getattr(fc_result, "forecast_mean", None)
+    return _parse_forecast_attrs(fc_result)
+
+
+def _parse_forecast_dict(fc_result: dict[str, Any]) -> dict[str, NDArray[np.float64]] | None:
+    """Parse a dict-like forecast result."""
+    mean = fc_result.get("mean", fc_result.get("forecast"))
     if mean is None:
-        mean = getattr(fc_result, "mean", None)
+        return None
+    data: dict[str, NDArray[np.float64]] = {
+        "mean": np.asarray(mean, dtype=np.float64).ravel(),
+    }
+    se = fc_result.get("se", fc_result.get("se_mean", fc_result.get("std")))
+    if se is not None:
+        data["se"] = np.asarray(se, dtype=np.float64).ravel()
+    return data
+
+
+def _first_attr(obj: Any, names: list[str]) -> Any:
+    """Return the first non-None attribute among `names`, else None."""
+    for name in names:
+        val = getattr(obj, name, None)
+        if val is not None:
+            return val
+    return None
+
+
+def _parse_forecast_attrs(fc_result: Any) -> dict[str, NDArray[np.float64]] | None:
+    """Parse a forecast result that exposes mean/se via attributes or is an array."""
+    mean = _first_attr(fc_result, ["forecast_mean", "mean", "predicted_mean"])
     if mean is None:
-        mean = getattr(fc_result, "predicted_mean", None)
-    if mean is None:
-        # Maybe it's just an array
         try:
             mean = np.asarray(fc_result, dtype=np.float64).ravel()
             return {"mean": mean}
@@ -252,11 +265,7 @@ def _parse_forecast_result(fc_result: Any) -> dict[str, NDArray[np.float64]] | N
             return None
 
     data = {"mean": np.asarray(mean, dtype=np.float64).ravel()}
-    se = getattr(fc_result, "forecast_se", None)
-    if se is None:
-        se = getattr(fc_result, "se_mean", None)
-    if se is None:
-        se = getattr(fc_result, "se", None)
+    se = _first_attr(fc_result, ["forecast_se", "se_mean", "se"])
     if se is not None:
         data["se"] = np.asarray(se, dtype=np.float64).ravel()
 

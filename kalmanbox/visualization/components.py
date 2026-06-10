@@ -75,60 +75,10 @@ def plot_components(
         axes = [axes]
 
     z_score = _ci_to_z(ci)
-    colors = theme_config.colors
 
     for idx, (name, data) in enumerate(components.items()):
         ax = axes[idx]
-        values = data["values"]
-        t = data.get("time", np.arange(len(values)))
-        std = data.get("std", None)
-
-        if name == "observed":
-            # Observed: plot raw data + fitted if available
-            ax.plot(
-                t,
-                values,
-                color=colors.primary,
-                linewidth=theme_config.line_width,
-                label="Observed",
-                alpha=0.7,
-            )
-            if "fitted" in data and data["fitted"] is not None:
-                ax.plot(
-                    t,
-                    data["fitted"],
-                    color=colors.accent,
-                    linewidth=theme_config.line_width * 0.8,
-                    label="Fitted",
-                    linestyle="--",
-                )
-                ax.legend(loc="upper right", framealpha=0.8)
-        elif name == "irregular":
-            # Irregular: scatter-like with zero line
-            ax.plot(
-                t,
-                values,
-                color=colors.secondary,
-                linewidth=theme_config.line_width * 0.7,
-                alpha=0.8,
-            )
-            ax.axhline(y=0, color=colors.text, linewidth=0.5, linestyle="-", alpha=0.5)
-        else:
-            # Standard component: line + CI band
-            ax.plot(t, values, color=colors.primary, linewidth=theme_config.line_width)
-            if std is not None:
-                upper = values + z_score * std
-                lower = values - z_score * std
-                ax.fill_between(
-                    t,
-                    lower,
-                    upper,
-                    color=colors.tertiary,
-                    alpha=0.3,
-                    label=f"{ci * 100:.0f}% CI",
-                )
-                ax.legend(loc="upper right", framealpha=0.8)
-
+        _draw_component_panel(ax, name, data, z_score, ci, theme_config)
         ax.set_ylabel(name.capitalize(), fontsize=theme_config.fonts.label_size)
         ax.tick_params(labelsize=theme_config.fonts.tick_size)
 
@@ -139,6 +89,62 @@ def plot_components(
     fig.tight_layout()
 
     return fig
+
+
+def _draw_component_panel(
+    ax: Any,
+    name: str,
+    data: dict[str, Any],
+    z_score: float,
+    ci: float,
+    theme_config: Any,
+) -> None:
+    """Draw a single component panel based on its type."""
+    values = data["values"]
+    t = data.get("time", np.arange(len(values)))
+    colors = theme_config.colors
+
+    if name == "observed":
+        ax.plot(
+            t,
+            values,
+            color=colors.primary,
+            linewidth=theme_config.line_width,
+            label="Observed",
+            alpha=0.7,
+        )
+        if data.get("fitted") is not None:
+            ax.plot(
+                t,
+                data["fitted"],
+                color=colors.accent,
+                linewidth=theme_config.line_width * 0.8,
+                label="Fitted",
+                linestyle="--",
+            )
+            ax.legend(loc="upper right", framealpha=0.8)
+    elif name == "irregular":
+        ax.plot(
+            t,
+            values,
+            color=colors.secondary,
+            linewidth=theme_config.line_width * 0.7,
+            alpha=0.8,
+        )
+        ax.axhline(y=0, color=colors.text, linewidth=0.5, linestyle="-", alpha=0.5)
+    else:
+        ax.plot(t, values, color=colors.primary, linewidth=theme_config.line_width)
+        std = data.get("std")
+        if std is not None:
+            ax.fill_between(
+                t,
+                values - z_score * std,
+                values + z_score * std,
+                color=colors.tertiary,
+                alpha=0.3,
+                label=f"{ci * 100:.0f}% CI",
+            )
+            ax.legend(loc="upper right", framealpha=0.8)
 
 
 def _extract_components(
@@ -159,69 +165,41 @@ def _extract_components(
     return components
 
 
+# Candidate attribute names for each component's values, in priority order.
+_COMPONENT_ATTRS: dict[str, list[str]] = {
+    "observed": ["observed", "endog", "y"],
+    "trend": ["trend", "level", "smoothed_level"],
+    "slope": ["slope", "smoothed_slope"],
+    "seasonal": ["seasonal", "smoothed_seasonal"],
+    "cycle": ["cycle", "smoothed_cycle"],
+    "irregular": ["irregular", "resid", "residuals", "standardized_residuals"],
+}
+
+
 def _get_component_data(
     results: Any,
     name: str,
     time_index: NDArray[np.float64] | None,
 ) -> dict[str, Any] | None:
     """Try to extract a single component from results."""
-    data: dict[str, Any] = {}
+    attrs = _COMPONENT_ATTRS.get(name)
+    if attrs is None:
+        return None
+
+    values = _get_attr(results, attrs)
+    if values is None:
+        return None
+
+    data: dict[str, Any] = {"values": np.asarray(values, dtype=np.float64)}
 
     if name == "observed":
-        values = _get_attr(results, ["observed", "endog", "y"])
-        if values is None:
-            return None
-        data["values"] = np.asarray(values, dtype=np.float64)
         fitted = _get_attr(results, ["fitted_values", "fittedvalues", "fitted"])
         if fitted is not None:
             data["fitted"] = np.asarray(fitted, dtype=np.float64)
-    elif name == "trend":
-        values = _get_attr(results, ["trend", "level", "smoothed_level"])
-        if values is None:
-            return None
-        data["values"] = np.asarray(values, dtype=np.float64)
+    elif name != "irregular":
         std = _get_component_std(results, name)
         if std is not None:
             data["std"] = std
-    elif name == "slope":
-        values = _get_attr(results, ["slope", "smoothed_slope"])
-        if values is None:
-            return None
-        data["values"] = np.asarray(values, dtype=np.float64)
-        std = _get_component_std(results, name)
-        if std is not None:
-            data["std"] = std
-    elif name == "seasonal":
-        values = _get_attr(results, ["seasonal", "smoothed_seasonal"])
-        if values is None:
-            return None
-        data["values"] = np.asarray(values, dtype=np.float64)
-        std = _get_component_std(results, name)
-        if std is not None:
-            data["std"] = std
-    elif name == "cycle":
-        values = _get_attr(results, ["cycle", "smoothed_cycle"])
-        if values is None:
-            return None
-        data["values"] = np.asarray(values, dtype=np.float64)
-        std = _get_component_std(results, name)
-        if std is not None:
-            data["std"] = std
-    elif name == "irregular":
-        values = _get_attr(
-            results,
-            [
-                "irregular",
-                "resid",
-                "residuals",
-                "standardized_residuals",
-            ],
-        )
-        if values is None:
-            return None
-        data["values"] = np.asarray(values, dtype=np.float64)
-    else:
-        return None
 
     if time_index is not None and len(time_index) == len(data["values"]):
         data["time"] = time_index

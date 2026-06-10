@@ -300,71 +300,170 @@ class UnobservedComponents(StateSpaceModel):
 
         return unconstrained
 
-    def _build_ssm(self, params: NDArray[np.float64]) -> StateSpaceRepresentation:
-        """Build the composite state-space representation."""
-        k_states = self._k_states
-        layout = self._layout
-
-        # Parse parameters
+    def _parse_params(self, params: NDArray[np.float64]) -> dict[str, float | NDArray[np.float64]]:
+        """Parse the parameter vector into named components."""
         idx = 0
-        sigma2_obs = params[idx]
+        parsed: dict[str, float | NDArray[np.float64]] = {
+            "sigma2_obs": params[idx],
+            "sigma2_level": 0.0,
+            "sigma2_trend": 0.0,
+            "phi_trend": 1.0,
+            "sigma2_seasonal": 0.0,
+            "rho": 0.0,
+            "lambda_c": 0.0,
+            "sigma2_cycle": 0.0,
+            "phi_ar": np.array([]),
+            "sigma2_ar": 0.0,
+        }
         idx += 1
 
-        sigma2_level = 0.0
         if self._level:
-            sigma2_level = params[idx]
+            parsed["sigma2_level"] = params[idx]
             idx += 1
 
-        sigma2_trend = 0.0
         if self._trend in ("stochastic", "damped"):
-            sigma2_trend = params[idx]
+            parsed["sigma2_trend"] = params[idx]
             idx += 1
 
-        phi_trend = 1.0
         if self._trend == "damped":
-            phi_trend = params[idx]
+            parsed["phi_trend"] = params[idx]
             idx += 1
 
-        sigma2_seasonal = 0.0
         if self._seasonal != "none":
-            sigma2_seasonal = params[idx]
+            parsed["sigma2_seasonal"] = params[idx]
             idx += 1
 
-        rho, lambda_c, sigma2_cycle = 0.0, 0.0, 0.0
         if self._cycle:
-            rho = params[idx]
-            idx += 1
-            lambda_c = params[idx]
-            idx += 1
-            sigma2_cycle = params[idx]
-            idx += 1
+            parsed["rho"] = params[idx]
+            parsed["lambda_c"] = params[idx + 1]
+            parsed["sigma2_cycle"] = params[idx + 2]
+            idx += 3
 
-        phi_ar = np.array([])
-        sigma2_ar = 0.0
         if self._ar_order > 0:
-            phi_ar = params[idx : idx + self._ar_order]
+            parsed["phi_ar"] = params[idx : idx + self._ar_order]
             idx += self._ar_order
-            sigma2_ar = params[idx]
+            parsed["sigma2_ar"] = params[idx]
             idx += 1
 
-        # Build noise list: (state_idx, variance)
+        return parsed
+
+    def _build_noise_list(
+        self, parsed: dict[str, float | NDArray[np.float64]]
+    ) -> list[tuple[int, float]]:
+        """Build the list of (state_index, variance) noise entries."""
+        layout = self._layout
         noise_list: list[tuple[int, float]] = []
 
         if self._level:
-            noise_list.append((layout["level"]["start"], sigma2_level))
+            noise_list.append((layout["level"]["start"], float(parsed["sigma2_level"])))
 
         if self._trend in ("stochastic", "damped"):
-            noise_list.append((layout["trend"]["start"], sigma2_trend))
+            noise_list.append((layout["trend"]["start"], float(parsed["sigma2_trend"])))
 
         if self._seasonal != "none":
-            noise_list.append((layout["seasonal"]["start"], sigma2_seasonal))
+            noise_list.append((layout["seasonal"]["start"], float(parsed["sigma2_seasonal"])))
 
         if self._cycle:
+            sigma2_cycle = float(parsed["sigma2_cycle"])
             noise_list.append((layout["cycle"]["start"], sigma2_cycle))
             noise_list.append((layout["cycle"]["start"] + 1, sigma2_cycle))
 
         if self._ar_order > 0:
-            noise_list.append((layout["ar"]["start"], sigma2_ar))
+            noise_list.append((layout["ar"]["start"], float(parsed["sigma2_ar"])))
+
+        return noise_list
+
+    def _fill_level_trend(
+        self, T: NDArray[np.float64], Z: NDArray[np.float64], phi_trend: float
+    ) -> None:
+        """Fill level and trend blocks of T and Z."""
+        layout = self._layout
+        if self._level:
+            s = layout["level"]["start"]
+            T[s, s] = 1.0
+            Z[0, s] = 1.0
+            if "trend" in layout:
+                T[s, layout["trend"]["start"]] = 1.0  # mu_t gets nu_{t-1}
+
+        if "trend" in layout:
+            ts = layout["trend"]["start"]
+            T[ts, ts] = phi_trend if self._trend == "damped" else 1.0
+
+    def _fill_seasonal(self, T: NDArray[np.float64], Z: NDArray[np.float64]) -> None:
+        """Fill the seasonal block of T and Z."""
+        if "seasonal" not in self._layout:
+            return
+        assert self._seasonal_period is not None
+        ss = self._layout["seasonal"]["start"]
+        Z[0, ss] = 1.0
+        s_period = self._seasonal_period
+
+        if self._seasonal == "dummy":
+            for j in range(s_period - 1):
+                T[ss, ss + j] = -1.0
+            for j in range(s_period - 2):
+                T[ss + 1 + j, ss + j] = 1.0
+            return
+
+        # Trigonometric
+        n_harmonics = s_period // 2
+        si = ss
+        for j in range(1, n_harmonics + 1):
+            lam = 2.0 * np.pi * j / s_period
+            if j < n_harmonics or s_period % 2 != 0:
+                T[si, si] = np.cos(lam)
+                T[si, si + 1] = np.sin(lam)
+                T[si + 1, si] = -np.sin(lam)
+                T[si + 1, si + 1] = np.cos(lam)
+                si += 2
+            else:
+                T[si, si] = -1.0
+                si += 1
+
+    def _fill_cycle(
+        self, T: NDArray[np.float64], Z: NDArray[np.float64], rho: float, lambda_c: float
+    ) -> None:
+        """Fill the cycle block of T and Z."""
+        if not (self._cycle and "cycle" in self._layout):
+            return
+        cs = self._layout["cycle"]["start"]
+        cos_l = np.cos(lambda_c)
+        sin_l = np.sin(lambda_c)
+        T[cs, cs] = rho * cos_l
+        T[cs, cs + 1] = rho * sin_l
+        T[cs + 1, cs] = -rho * sin_l
+        T[cs + 1, cs + 1] = rho * cos_l
+        Z[0, cs] = 1.0
+
+    def _fill_ar(
+        self, T: NDArray[np.float64], Z: NDArray[np.float64], phi_ar: NDArray[np.float64]
+    ) -> None:
+        """Fill the autoregressive block of T and Z."""
+        if not (self._ar_order > 0 and "ar" in self._layout):
+            return
+        ars = self._layout["ar"]["start"]
+        for i in range(self._ar_order):
+            T[ars, ars + i] = phi_ar[i] if i < len(phi_ar) else 0.0
+        for i in range(1, self._ar_order):
+            T[ars + i, ars + i - 1] = 1.0
+        Z[0, ars] = 1.0
+
+    def _fill_exog(self, T: NDArray[np.float64], Z: NDArray[np.float64]) -> None:
+        """Fill the exogenous (fixed coefficient) block of T and Z."""
+        if not (self._exog is not None and "exog" in self._layout):
+            return
+        es = self._layout["exog"]["start"]
+        k = self._layout["exog"]["size"]
+        for i in range(k):
+            T[es + i, es + i] = 1.0  # Identity (fixed)
+        # Z for exog is X_t (time-varying) - use mean as approximation
+        Z[0, es : es + k] = np.mean(self._exog, axis=0)
+
+    def _build_ssm(self, params: NDArray[np.float64]) -> StateSpaceRepresentation:
+        """Build the composite state-space representation."""
+        k_states = self._k_states
+        parsed = self._parse_params(params)
+        noise_list = self._build_noise_list(parsed)
 
         k_posdef = max(len(noise_list), 1)
         ssm = StateSpaceRepresentation(k_states=k_states, k_endog=1, k_posdef=k_posdef)
@@ -374,84 +473,15 @@ class UnobservedComponents(StateSpaceModel):
         R = np.zeros((k_states, k_posdef))
         Q = np.zeros((k_posdef, k_posdef))
 
-        # --- Level ---
-        if self._level:
-            s = layout["level"]["start"]
-            T[s, s] = 1.0
-            Z[0, s] = 1.0
+        self._fill_level_trend(T, Z, float(parsed["phi_trend"]))
+        self._fill_seasonal(T, Z)
+        self._fill_cycle(T, Z, float(parsed["rho"]), float(parsed["lambda_c"]))
+        phi_ar = parsed["phi_ar"]
+        assert isinstance(phi_ar, np.ndarray)
+        self._fill_ar(T, Z, phi_ar)
+        self._fill_exog(T, Z)
 
-            if "trend" in layout:
-                ts = layout["trend"]["start"]
-                T[s, ts] = 1.0  # mu_t gets nu_{t-1}
-
-        # --- Trend ---
-        if "trend" in layout:
-            ts = layout["trend"]["start"]
-            if self._trend == "damped":
-                T[ts, ts] = phi_trend
-            else:
-                T[ts, ts] = 1.0
-
-        # --- Seasonal ---
-        if "seasonal" in layout:
-            ss = layout["seasonal"]["start"]
-            Z[0, ss] = 1.0
-
-            if self._seasonal == "dummy":
-                assert self._seasonal_period is not None
-                s_period = self._seasonal_period
-                for j in range(s_period - 1):
-                    T[ss, ss + j] = -1.0
-                for j in range(s_period - 2):
-                    T[ss + 1 + j, ss + j] = 1.0
-            else:
-                # Trigonometric
-                assert self._seasonal_period is not None
-                s_period = self._seasonal_period
-                n_harmonics = s_period // 2
-                si = ss
-                for j in range(1, n_harmonics + 1):
-                    lam = 2.0 * np.pi * j / s_period
-                    if j < n_harmonics or s_period % 2 != 0:
-                        T[si, si] = np.cos(lam)
-                        T[si, si + 1] = np.sin(lam)
-                        T[si + 1, si] = -np.sin(lam)
-                        T[si + 1, si + 1] = np.cos(lam)
-                        si += 2
-                    else:
-                        T[si, si] = -1.0
-                        si += 1
-
-        # --- Cycle ---
-        if self._cycle and "cycle" in layout:
-            cs = layout["cycle"]["start"]
-            cos_l = np.cos(lambda_c)
-            sin_l = np.sin(lambda_c)
-            T[cs, cs] = rho * cos_l
-            T[cs, cs + 1] = rho * sin_l
-            T[cs + 1, cs] = -rho * sin_l
-            T[cs + 1, cs + 1] = rho * cos_l
-            Z[0, cs] = 1.0
-
-        # --- AR ---
-        if self._ar_order > 0 and "ar" in layout:
-            ars = layout["ar"]["start"]
-            for i in range(self._ar_order):
-                T[ars, ars + i] = phi_ar[i] if i < len(phi_ar) else 0.0
-            for i in range(1, self._ar_order):
-                T[ars + i, ars + i - 1] = 1.0
-            Z[0, ars] = 1.0
-
-        # --- Exogenous (fixed coefficients) ---
-        if self._exog is not None and "exog" in layout:
-            es = layout["exog"]["start"]
-            k = layout["exog"]["size"]
-            for i in range(k):
-                T[es + i, es + i] = 1.0  # Identity (fixed)
-            # Z for exog is X_t (time-varying) - use mean as approximation
-            Z[0, es : es + k] = np.mean(self._exog, axis=0)
-
-        # --- Selection matrix R and covariance Q ---
+        # Selection matrix R and covariance Q
         for ni, (state_idx, variance) in enumerate(noise_list):
             R[state_idx, ni] = 1.0
             Q[ni, ni] = variance
@@ -460,7 +490,7 @@ class UnobservedComponents(StateSpaceModel):
         ssm.Z = Z
         ssm.R = R
         ssm.Q = Q
-        ssm.H = np.array([[sigma2_obs]])
+        ssm.H = np.array([[float(parsed["sigma2_obs"])]])
         ssm.a1 = np.zeros(k_states)
         ssm.P1 = np.eye(k_states) * config.diffuse_initial_variance
 

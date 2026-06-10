@@ -65,6 +65,31 @@ class DynamicFactorModel(StateSpaceModel):
         """Number of parameters in Phi."""
         return self._k_factors * self._k_factors
 
+    def _init_lambda(self, y_valid: NDArray[np.float64]) -> NDArray[np.float64]:
+        """PCA-based initialization of the Lambda loading matrix."""
+        k = self._k_endog_actual
+        r = self._k_factors
+
+        if y_valid.shape[0] <= r:
+            return np.eye(k, r)
+
+        # Simple PCA
+        y_centered = y_valid - np.mean(y_valid, axis=0)
+        cov = y_centered.T @ y_centered / y_valid.shape[0]
+        eigenvalues, eigenvectors = np.linalg.eigh(cov)
+        # Take top r eigenvectors
+        idx = np.argsort(eigenvalues)[::-1][:r]
+        lambda_init = eigenvectors[:, idx]
+
+        # Enforce lower-triangular identification for first r rows
+        for i in range(r):
+            for j in range(i + 1, r):
+                lambda_init[i, j] = 0.0
+            if lambda_init[i, i] < 0:
+                lambda_init[i, :] = -lambda_init[i, :]
+
+        return lambda_init
+
     @property
     def start_params(self) -> NDArray[np.float64]:
         """Initial parameters: Lambda (flattened), Phi, R_diag."""
@@ -82,23 +107,7 @@ class DynamicFactorModel(StateSpaceModel):
         valid = ~np.any(np.isnan(y), axis=1)
         y_valid = y[valid]
 
-        if y_valid.shape[0] > r:
-            # Simple PCA
-            y_centered = y_valid - np.mean(y_valid, axis=0)
-            cov = y_centered.T @ y_centered / y_valid.shape[0]
-            eigenvalues, eigenvectors = np.linalg.eigh(cov)
-            # Take top r eigenvectors
-            idx = np.argsort(eigenvalues)[::-1][:r]
-            lambda_init = eigenvectors[:, idx]
-
-            # Enforce lower-triangular identification for first r rows
-            for i in range(r):
-                for j in range(i + 1, r):
-                    lambda_init[i, j] = 0.0
-                if lambda_init[i, i] < 0:
-                    lambda_init[i, :] = -lambda_init[i, :]
-        else:
-            lambda_init = np.eye(k, r)
+        lambda_init = self._init_lambda(y_valid)
 
         # Flatten Lambda (only free params)
         for i in range(k):
@@ -108,19 +117,26 @@ class DynamicFactorModel(StateSpaceModel):
                 params.append(lambda_init[i, j])
 
         # Phi: small diagonal
-        for i in range(self._k_factors):
-            for j in range(self._k_factors):
-                if i == j:
-                    params.append(0.5)
-                else:
-                    params.append(0.0)
+        params.extend(self._init_phi())
 
         # R_diag: sample variance / 2 for each series
-        for i in range(k):
-            col = y_valid[:, i] if i < y_valid.shape[1] else y_valid[:, 0]
-            params.append(float(np.nanvar(col) / 2))
+        params.extend(self._init_r_diag(y_valid))
 
         return np.array(params)
+
+    def _init_phi(self) -> list[float]:
+        """Initialize Phi as a small diagonal matrix (flattened)."""
+        return [
+            0.5 if i == j else 0.0 for i in range(self._k_factors) for j in range(self._k_factors)
+        ]
+
+    def _init_r_diag(self, y_valid: NDArray[np.float64]) -> list[float]:
+        """Initialize idiosyncratic variances as half the sample variance per series."""
+        r_diag: list[float] = []
+        for i in range(self._k_endog_actual):
+            col = y_valid[:, i] if i < y_valid.shape[1] else y_valid[:, 0]
+            r_diag.append(float(np.nanvar(col) / 2))
+        return r_diag
 
     @property
     def param_names(self) -> list[str]:

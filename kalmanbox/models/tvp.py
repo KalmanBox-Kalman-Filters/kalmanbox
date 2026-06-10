@@ -257,8 +257,26 @@ class TimeVaryingParameters(StateSpaceModel):
             nobs_effective=nobs_effective,
         )
 
-    def fit(self, method: str = "mle", **kwargs: object) -> StateSpaceResults:
-        """Fit TVP model with time-varying Z."""
+    def fit(
+        self,
+        method: str = "mle",
+        maxiter: int = 500,
+        compute_se: bool = True,
+        **kwargs: object,
+    ) -> StateSpaceResults:
+        """Fit TVP model with time-varying Z.
+
+        Parameters
+        ----------
+        method : str
+            Estimation method (kept for interface compatibility).
+        maxiter : int
+            Maximum optimizer iterations.
+        compute_se : bool
+            Whether to compute standard errors (unused; always computed).
+        **kwargs : object
+            Additional keyword arguments (ignored).
+        """
         from kalmanbox.estimation.mle import MLEstimator
 
         estimator = MLEstimator()

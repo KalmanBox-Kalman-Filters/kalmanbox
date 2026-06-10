@@ -274,21 +274,9 @@ class BayesianSSM:
 
         total_draws = n_draws + burnin
 
-        # Initialize with MLE or start_params
-        try:
-            mle_results = self.model.fit()
-            params = mle_results.params.copy()
-        except Exception:  # noqa: BLE001
-            params = self.model.start_params.copy()
-
+        params = self._initial_params()
         param_names = list(self.model.param_names)
-
-        # Set up priors
-        if priors is None:
-            priors = {}
-        for name in param_names:
-            if name not in priors:
-                priors[name] = InverseGamma(a=0.01, b=0.01)
+        priors = self._resolve_priors(priors, param_names)
 
         # Storage for draws
         param_storage: dict[str, list[float]] = {name: [] for name in param_names}
@@ -326,6 +314,26 @@ class BayesianSSM:
             n_draws=n_draws,
             burnin=burnin,
         )
+
+    def _initial_params(self) -> NDArray[np.float64]:
+        """Initialize parameters from MLE, falling back to start_params."""
+        try:
+            mle_results = self.model.fit()
+            return mle_results.params.copy()
+        except Exception:  # noqa: BLE001
+            return self.model.start_params.copy()
+
+    @staticmethod
+    def _resolve_priors(
+        priors: dict[str, InverseGamma] | None,
+        param_names: list[str],
+    ) -> dict[str, InverseGamma]:
+        """Fill in weakly informative priors for any unspecified parameters."""
+        resolved = dict(priors) if priors is not None else {}
+        for name in param_names:
+            if name not in resolved:
+                resolved[name] = InverseGamma(a=0.01, b=0.01)
+        return resolved
 
     def _ffbs(
         self,
@@ -439,47 +447,17 @@ class BayesianSSM:
         NDArray
             New parameter values.
         """
-        nobs = endog.shape[0]
         new_params = current_params.copy()
-        Z = ssm.Z  # type: ignore[union-attr]
-        T_mat = ssm.T  # type: ignore[union-attr]
-        d_vec = ssm.d  # type: ignore[union-attr]
-        c_vec = ssm.c  # type: ignore[union-attr]
 
         for i, name in enumerate(param_names):
             prior = priors.get(name, InverseGamma(a=0.01, b=0.01))
 
             if "obs" in name or "irregular" in name:
-                # Observation variance: SSR = sum (y_t - Z @ alpha_t - d)^2
-                obs_resid = np.zeros(nobs)
-                for t in range(nobs):
-                    if not np.any(np.isnan(endog[t])):
-                        e_t = endog[t] - Z @ states[t] - d_vec
-                        obs_resid[t] = float(e_t @ e_t)
-
-                n_valid = int(np.sum(~np.any(np.isnan(endog), axis=1)))
-                ssr = float(np.sum(obs_resid))
-
-                posterior_dist = prior.posterior(n_valid, ssr)
-                new_params[i] = float(posterior_dist.sample(size=1, rng=rng)[0])
-
-            elif (
-                "level" in name
-                or "trend" in name
-                or "slope" in name
-                or "state" in name
-                or "seasonal" in name
-            ):
-                # State variance: SSE = sum (alpha_{t+1} - T @ alpha_t - c)^2
-                state_resid = np.zeros(nobs - 1)
-                for t in range(nobs - 1):
-                    e_t = states[t + 1] - T_mat @ states[t] - c_vec
-                    state_resid[t] = float(e_t @ e_t)
-
-                sse = float(np.sum(state_resid))
-                posterior_dist = prior.posterior(nobs - 1, sse)
-                new_params[i] = float(posterior_dist.sample(size=1, rng=rng)[0])
-
+                n, sum_sq = self._obs_ssr(endog, states, ssm)
+                new_params[i] = self._draw_variance(prior, n, sum_sq, rng)
+            elif _is_state_variance(name):
+                n, sum_sq = self._state_ssr(states, ssm)
+                new_params[i] = self._draw_variance(prior, n, sum_sq, rng)
             else:
                 logger.debug(
                     "Parameter '%s' not recognized as variance, keeping current value",
@@ -487,6 +465,62 @@ class BayesianSSM:
                 )
 
         return new_params
+
+    @staticmethod
+    def _draw_variance(
+        prior: InverseGamma,
+        n: int,
+        sum_sq: float,
+        rng: np.random.Generator,
+    ) -> float:
+        """Draw a variance from its conjugate Inverse-Gamma posterior."""
+        posterior_dist = prior.posterior(n, sum_sq)
+        return float(posterior_dist.sample(size=1, rng=rng)[0])
+
+    @staticmethod
+    def _obs_ssr(
+        endog: NDArray[np.float64],
+        states: NDArray[np.float64],
+        ssm: object,
+    ) -> tuple[int, float]:
+        """Compute valid-obs count and SSR = sum (y_t - Z @ alpha_t - d)^2."""
+        nobs = endog.shape[0]
+        Z = ssm.Z  # type: ignore[union-attr]
+        d_vec = ssm.d  # type: ignore[union-attr]
+
+        obs_resid = np.zeros(nobs)
+        for t in range(nobs):
+            if not np.any(np.isnan(endog[t])):
+                e_t = endog[t] - Z @ states[t] - d_vec
+                obs_resid[t] = float(e_t @ e_t)
+
+        n_valid = int(np.sum(~np.any(np.isnan(endog), axis=1)))
+        return n_valid, float(np.sum(obs_resid))
+
+    @staticmethod
+    def _state_ssr(
+        states: NDArray[np.float64],
+        ssm: object,
+    ) -> tuple[int, float]:
+        """Compute count and SSE = sum (alpha_{t+1} - T @ alpha_t - c)^2."""
+        nobs = states.shape[0]
+        T_mat = ssm.T  # type: ignore[union-attr]
+        c_vec = ssm.c  # type: ignore[union-attr]
+
+        state_resid = np.zeros(nobs - 1)
+        for t in range(nobs - 1):
+            e_t = states[t + 1] - T_mat @ states[t] - c_vec
+            state_resid[t] = float(e_t @ e_t)
+
+        return nobs - 1, float(np.sum(state_resid))
+
+
+_STATE_VARIANCE_KEYWORDS = ("level", "trend", "slope", "state", "seasonal")
+
+
+def _is_state_variance(name: str) -> bool:
+    """Return True if the parameter name denotes a state-variance term."""
+    return any(keyword in name for keyword in _STATE_VARIANCE_KEYWORDS)
 
 
 def effective_sample_size(chain: NDArray[np.float64]) -> float:

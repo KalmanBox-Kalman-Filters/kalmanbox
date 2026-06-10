@@ -168,17 +168,26 @@ class ReportManager:
 
     def _simple_html_body(self, context: dict[str, Any]) -> str:
         """Generate simple HTML body without Jinja2 templates."""
-        parts: list[str] = []
-
         model_info = context.get("model_info", {})
         model_name = model_info.get("model_name", "Report")
-        parts.append(f"<h1>{model_name}</h1>")
 
-        # Model info
-        parts.append('<div class="section">')
-        parts.append('<h2 class="section-header">Model Summary</h2>')
-        parts.append('<div class="section-content">')
-        parts.append('<div class="info-grid">')
+        parts: list[str] = [f"<h1>{model_name}</h1>"]
+        parts.extend(self._html_model_summary(model_info))
+        parts.extend(self._html_parameters(context.get("parameters", [])))
+        parts.extend(self._html_info_criteria(context.get("info_criteria", {})))
+        parts.extend(self._html_footer(context.get("metadata", {})))
+
+        return "\n".join(parts)
+
+    @staticmethod
+    def _html_model_summary(model_info: dict[str, Any]) -> list[str]:
+        """Build the model summary section."""
+        parts: list[str] = [
+            '<div class="section">',
+            '<h2 class="section-header">Model Summary</h2>',
+            '<div class="section-content">',
+            '<div class="info-grid">',
+        ]
         for key in ["n_obs", "n_states", "n_params", "optimizer"]:
             val = model_info.get(key)
             if val is not None:
@@ -188,71 +197,82 @@ class ReportManager:
                     f'<div class="value">{val}</div></div>'
                 )
         parts.append("</div></div></div>")
+        return parts
 
-        # Parameters
-        parameters = context.get("parameters", [])
-        if parameters:
-            parts.append('<div class="section">')
-            parts.append('<h2 class="section-header">Parameter Estimates</h2>')
-            parts.append('<div class="section-content">')
-            parts.append("<table>")
+    @staticmethod
+    def _significance(p_value: float) -> str:
+        """Return significance stars for a p-value."""
+        if p_value < 0.001:
+            return "***"
+        if p_value < 0.01:
+            return "**"
+        if p_value < 0.05:
+            return "*"
+        return ""
+
+    @classmethod
+    def _html_parameters(cls, parameters: list[dict[str, Any]]) -> list[str]:
+        """Build the parameter estimates section."""
+        if not parameters:
+            return []
+        parts: list[str] = [
+            '<div class="section">',
+            '<h2 class="section-header">Parameter Estimates</h2>',
+            '<div class="section-content">',
+            "<table>",
+            "<thead><tr><th>Parameter</th><th>Estimate</th>"
+            "<th>Std. Error</th><th>t-stat</th><th>p-value</th>"
+            "<th>Sig.</th></tr></thead>",
+            "<tbody>",
+        ]
+        for p in parameters:
+            sig = cls._significance(p["p_value"]) if "p_value" in p else ""
+            se = f"{p['se']:.4f}" if "se" in p else "--"
+            ts = f"{p['t_stat']:.4f}" if "t_stat" in p else "--"
+            pval = f"{p['p_value']:.4f}" if "p_value" in p else "--"
             parts.append(
-                "<thead><tr><th>Parameter</th><th>Estimate</th>"
-                "<th>Std. Error</th><th>t-stat</th><th>p-value</th>"
-                "<th>Sig.</th></tr></thead>"
+                f"<tr><td>{p['name']}</td>"
+                f'<td class="numeric">{p["value"]:.4f}</td>'
+                f'<td class="numeric">{se}</td>'
+                f'<td class="numeric">{ts}</td>'
+                f'<td class="numeric">{pval}</td>'
+                f'<td class="{("significant" if sig else "")}">'
+                f"{sig}</td></tr>"
             )
-            parts.append("<tbody>")
-            for p in parameters:
-                sig = ""
-                if "p_value" in p:
-                    pv = p["p_value"]
-                    if pv < 0.001:
-                        sig = "***"
-                    elif pv < 0.01:
-                        sig = "**"
-                    elif pv < 0.05:
-                        sig = "*"
-                se = f"{p['se']:.4f}" if "se" in p else "--"
-                ts = f"{p['t_stat']:.4f}" if "t_stat" in p else "--"
-                pval = f"{p['p_value']:.4f}" if "p_value" in p else "--"
-                parts.append(
-                    f"<tr><td>{p['name']}</td>"
-                    f'<td class="numeric">{p["value"]:.4f}</td>'
-                    f'<td class="numeric">{se}</td>'
-                    f'<td class="numeric">{ts}</td>'
-                    f'<td class="numeric">{pval}</td>'
-                    f'<td class="{("significant" if sig else "")}">'
-                    f"{sig}</td></tr>"
-                )
-            parts.append("</tbody></table>")
-            parts.append("</div></div>")
+        parts.append("</tbody></table>")
+        parts.append("</div></div>")
+        return parts
 
-        # Info criteria
-        ic = context.get("info_criteria", {})
-        if any(v is not None for v in ic.values()):
-            parts.append('<div class="section">')
-            parts.append('<h2 class="section-header">Information Criteria</h2>')
-            parts.append('<div class="section-content">')
-            parts.append('<div class="info-grid">')
-            for name, val in ic.items():
-                display = name.upper() if name != "loglike" else "Log-Likelihood"
-                val_str = f"{val:.4f}" if val is not None else "--"
-                parts.append(
-                    f'<div class="info-card">'
-                    f'<div class="label">{display}</div>'
-                    f'<div class="value">{val_str}</div></div>'
-                )
-            parts.append("</div></div></div>")
+    @staticmethod
+    def _html_info_criteria(ic: dict[str, Any]) -> list[str]:
+        """Build the information criteria section."""
+        if not any(v is not None for v in ic.values()):
+            return []
+        parts: list[str] = [
+            '<div class="section">',
+            '<h2 class="section-header">Information Criteria</h2>',
+            '<div class="section-content">',
+            '<div class="info-grid">',
+        ]
+        for name, val in ic.items():
+            display = name.upper() if name != "loglike" else "Log-Likelihood"
+            val_str = f"{val:.4f}" if val is not None else "--"
+            parts.append(
+                f'<div class="info-card">'
+                f'<div class="label">{display}</div>'
+                f'<div class="value">{val_str}</div></div>'
+            )
+        parts.append("</div></div></div>")
+        return parts
 
-        # Footer
-        metadata = context.get("metadata", {})
+    @staticmethod
+    def _html_footer(metadata: dict[str, Any]) -> list[str]:
+        """Build the report footer."""
         version = metadata.get("kalmanbox_version", "unknown")
         generated = metadata.get("generated_at", "")
         rtype = metadata.get("report_type", "SSM")
-        parts.append(
+        return [
             f'<div class="report-footer">'
             f"Report type: {rtype} | Generated: {generated} | "
             f"kalmanbox v{version}</div>"
-        )
-
-        return "\n".join(parts)
+        ]

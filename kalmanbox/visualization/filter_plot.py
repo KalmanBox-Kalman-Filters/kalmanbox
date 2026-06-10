@@ -139,13 +139,7 @@ def plot_covariance_convergence(
         msg = "No filtered state covariance found in results."
         raise ValueError(msg)
 
-    if cov.ndim == 3:
-        n_time, n_states, _ = cov.shape
-    elif cov.ndim == 2:
-        n_time, n_states = cov.shape
-    else:
-        msg = f"Unexpected covariance shape: {cov.shape}"
-        raise ValueError(msg)
+    n_time, n_states = _cov_shape(cov)
 
     if states is None:
         states = list(range(n_states))
@@ -157,14 +151,8 @@ def plot_covariance_convergence(
 
     for idx, state_idx in enumerate(states):
         color = series_colors[idx % len(series_colors)]
-
         diag_vals = cov[:, state_idx, state_idx] if cov.ndim == 3 else cov[:, state_idx]
-
-        if state_names and idx < len(state_names):
-            label = state_names[idx]
-        else:
-            label = f"P[{state_idx},{state_idx}]"
-
+        label = _cov_label(state_names, idx, state_idx)
         ax.plot(t, diag_vals, color=color, linewidth=theme_config.line_width, label=label)
 
     if log_scale:
@@ -179,6 +167,29 @@ def plot_covariance_convergence(
     fig.tight_layout()
 
     return fig
+
+
+def _cov_shape(cov: NDArray[np.float64]) -> tuple[int, int]:
+    """Return (n_time, n_states) from a 2D or 3D covariance array."""
+    if cov.ndim == 3:
+        n_time, n_states, _ = cov.shape
+        return n_time, n_states
+    if cov.ndim == 2:
+        n_time, n_states = cov.shape
+        return n_time, n_states
+    msg = f"Unexpected covariance shape: {cov.shape}"
+    raise ValueError(msg)
+
+
+def _cov_label(
+    state_names: Sequence[str] | None,
+    idx: int,
+    state_idx: int,
+) -> str:
+    """Resolve the legend label for a covariance diagonal line."""
+    if state_names and idx < len(state_names):
+        return state_names[idx]
+    return f"P[{state_idx},{state_idx}]"
 
 
 def _get_prediction_errors(results: Any) -> NDArray[np.float64] | None:

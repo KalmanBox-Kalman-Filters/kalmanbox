@@ -109,9 +109,7 @@ class StateSpaceModel(ABC):
             raise ValueError(msg)
 
         estimator = MLEstimator()
-        return estimator.fit(
-            self, self.endog, maxiter=maxiter, compute_se=compute_se, **kwargs
-        )
+        return estimator.fit(self, self.endog, maxiter=maxiter, compute_se=compute_se, **kwargs)
 
     def loglike(self, params: NDArray[np.float64]) -> float:
         """Compute log-likelihood for given parameters.

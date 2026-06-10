@@ -85,16 +85,26 @@ class SSMTransformer:
                 "name": str(param_names[i]),
                 "value": float(param_values[i]),
             }
-            if param_se is not None and i < len(param_se):
-                se = float(param_se[i])
-                entry["se"] = se
-                entry["t_stat"] = float(param_values[i] / se) if se > 0 else float("nan")
-            if param_pvalues is not None and i < len(param_pvalues):
-                entry["p_value"] = float(param_pvalues[i])
-                entry["significant"] = float(param_pvalues[i]) < 0.05
+            self._add_se_stats(entry, param_values[i], param_se, i)
+            self._add_pvalue_stats(entry, param_pvalues, i)
             params.append(entry)
 
         return params
+
+    @staticmethod
+    def _add_se_stats(entry: dict[str, Any], value: Any, param_se: Any, i: int) -> None:
+        """Add standard error and t-stat to a parameter entry."""
+        if param_se is not None and i < len(param_se):
+            se = float(param_se[i])
+            entry["se"] = se
+            entry["t_stat"] = float(value / se) if se > 0 else float("nan")
+
+    @staticmethod
+    def _add_pvalue_stats(entry: dict[str, Any], param_pvalues: Any, i: int) -> None:
+        """Add p-value and significance flag to a parameter entry."""
+        if param_pvalues is not None and i < len(param_pvalues):
+            entry["p_value"] = float(param_pvalues[i])
+            entry["significant"] = float(param_pvalues[i]) < 0.05
 
     def _extract_info_criteria(self, results: Any) -> dict[str, float | None]:
         """Extract information criteria."""

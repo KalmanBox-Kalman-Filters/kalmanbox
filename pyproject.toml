@@ -29,6 +29,12 @@ dependencies = [
 [project.scripts]
 kalmanbox = "kalmanbox.cli.main:main"
 
+[project.urls]
+Homepage = "https://github.com/nodesecon/kalmanbox"
+Documentation = "https://kalmanbox.nodesecon.com"
+Repository = "https://github.com/nodesecon/kalmanbox"
+Changelog = "https://github.com/nodesecon/kalmanbox/blob/main/CHANGELOG.md"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
@@ -62,7 +68,19 @@ docs = [
 path = "kalmanbox/__version__.py"
 
 [tool.hatch.build.targets.sdist]
-exclude = ["logs/", "docs/", ".github/", "tests/", ".venv/"]
+exclude = [
+    "logs/",
+    "docs/",
+    ".github/",
+    "tests/",
+    ".venv/",
+    ".claude/",
+    "site/",
+    "examples/",
+    "CLAUDE.md",
+    "scripts/",
+    ".pre-commit-config.yaml",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["kalmanbox"]

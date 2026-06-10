@@ -93,11 +93,28 @@ class RegressionSSM(StateSpaceModel):
         ssm.P1 = np.eye(k) * config.diffuse_initial_variance
         return ssm
 
-    def fit(self, method: str = "mle", **kwargs: object) -> StateSpaceResults:
+    def fit(
+        self,
+        method: str = "mle",
+        maxiter: int = 500,
+        compute_se: bool = True,
+        **kwargs: object,
+    ) -> StateSpaceResults:
         """Fit using analytical OLS solution.
 
         For fixed-coefficient regression, OLS is the MLE.
         We compute analytically and wrap in StateSpaceResults.
+
+        Parameters
+        ----------
+        method : str
+            Estimation method (kept for interface compatibility; OLS is used).
+        maxiter : int
+            Maximum optimizer iterations (unused; analytical solution).
+        compute_se : bool
+            Whether to compute standard errors (unused; always computed).
+        **kwargs : object
+            Additional keyword arguments (ignored).
         """
         y = self.endog[:, 0] if self.endog.ndim == 2 else self.endog.ravel()
         X = self.exog

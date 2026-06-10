@@ -10,6 +10,7 @@ filter to nonlinear systems.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
 import numpy as np
@@ -21,6 +22,19 @@ from kalmanbox.utils.matrix_ops import (
     log_det_via_cholesky,
     solve_via_cholesky,
 )
+
+
+@dataclass
+class _UpdateResult:
+    """Internal container for the UKF measurement-update outputs."""
+
+    y_hat: NDArray[np.float64]
+    S: NDArray[np.float64]
+    K: NDArray[np.float64]
+    v: NDArray[np.float64]
+    a_filt: NDArray[np.float64]
+    P_filt: NDArray[np.float64]
+    ll_t: float
 
 
 @runtime_checkable
@@ -187,6 +201,97 @@ class UnscentedKalmanFilter:
 
         return X
 
+    def _predict_step(
+        self,
+        a_prev: NDArray[np.float64],
+        P_prev: NDArray[np.float64],
+        RQR: NDArray[np.float64],
+        W_m: NDArray[np.float64],
+        W_c: NDArray[np.float64],
+        model: UKFModel,
+        t: int,
+    ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+        """Propagate sigma points through the transition function.
+
+        Returns the predicted state mean and covariance.
+        """
+        k_states = model.k_states
+        n_sigma = 2 * k_states + 1
+
+        X = self._generate_sigma_points(a_prev, P_prev, k_states)
+
+        X_pred = np.zeros_like(X)
+        for j in range(n_sigma):
+            X_pred[j] = model.transition(X[j], t)
+
+        a_pred = np.zeros(k_states)
+        for j in range(n_sigma):
+            a_pred += W_m[j] * X_pred[j]
+
+        P_pred = np.zeros((k_states, k_states))
+        for j in range(n_sigma):
+            diff = X_pred[j] - a_pred
+            P_pred += W_c[j] * np.outer(diff, diff)
+        P_pred += RQR
+        P_pred = ensure_symmetric(P_pred)
+
+        return a_pred, P_pred
+
+    def _update_step(
+        self,
+        a_pred: NDArray[np.float64],
+        P_pred: NDArray[np.float64],
+        y_t: NDArray[np.float64],
+        W_m: NDArray[np.float64],
+        W_c: NDArray[np.float64],
+        model: UKFModel,
+        t: int,
+    ) -> _UpdateResult:
+        """Perform the UKF measurement update.
+
+        Returns y_hat, S, K, v, a_filt, P_filt, and the observation
+        log-likelihood contribution.
+        """
+        k_states = model.k_states
+        k_endog = model.k_endog
+        n_sigma = 2 * k_states + 1
+
+        X = self._generate_sigma_points(a_pred, P_pred, k_states)
+
+        Y = np.zeros((n_sigma, k_endog))
+        for j in range(n_sigma):
+            Y[j] = model.observation(X[j], t)
+
+        y_hat = np.zeros(k_endog)
+        for j in range(n_sigma):
+            y_hat += W_m[j] * Y[j]
+
+        S = np.zeros((k_endog, k_endog))
+        for j in range(n_sigma):
+            dy = Y[j] - y_hat
+            S += W_c[j] * np.outer(dy, dy)
+        S += model.H
+        S = ensure_symmetric(S)
+
+        C = np.zeros((k_states, k_endog))
+        for j in range(n_sigma):
+            dx = X[j] - a_pred
+            dy = Y[j] - y_hat
+            C += W_c[j] * np.outer(dx, dy)
+
+        K = solve_via_cholesky(S, C.T).T
+        v = y_t - y_hat
+
+        a_filt = a_pred + K @ v
+        P_filt = P_pred - K @ S @ K.T
+        P_filt = ensure_symmetric(P_filt)
+
+        log_det_S = log_det_via_cholesky(S)
+        v_S_inv_v = float(v @ solve_via_cholesky(S, v))
+        ll_t = -0.5 * (k_endog * np.log(2.0 * np.pi) + log_det_S + v_S_inv_v)
+
+        return _UpdateResult(y_hat=y_hat, S=S, K=K, v=v, a_filt=a_filt, P_filt=P_filt, ll_t=ll_t)
+
     def filter(
         self,
         endog: NDArray[np.float64],
@@ -243,34 +348,16 @@ class UnscentedKalmanFilter:
                 a_pred = a
                 P_pred = P
             else:
-                a_prev = filtered_state[t - 1]
-                P_prev = filtered_cov[t - 1]
-
-                X = self._generate_sigma_points(a_prev, P_prev, k_states)
-
-                X_pred = np.zeros_like(X)
-                for j in range(2 * k_states + 1):
-                    X_pred[j] = model.transition(X[j], t)
-
-                a_pred = np.zeros(k_states)
-                for j in range(2 * k_states + 1):
-                    a_pred += W_m[j] * X_pred[j]
-
-                P_pred = np.zeros((k_states, k_states))
-                for j in range(2 * k_states + 1):
-                    diff = X_pred[j] - a_pred
-                    P_pred += W_c[j] * np.outer(diff, diff)
-                P_pred += RQR
-                P_pred = ensure_symmetric(P_pred)
+                a_pred, P_pred = self._predict_step(
+                    filtered_state[t - 1], filtered_cov[t - 1], RQR, W_m, W_c, model, t
+                )
 
             predicted_state[t] = a_pred
             predicted_cov[t] = P_pred
 
             # Check for missing data
             y_t = endog[t]
-            is_missing = np.any(np.isnan(y_t))
-
-            if is_missing:
+            if np.any(np.isnan(y_t)):
                 forecast[t] = model.observation(a_pred, t)
                 filtered_state[t] = a_pred
                 filtered_cov[t] = P_pred
@@ -280,49 +367,16 @@ class UnscentedKalmanFilter:
                 continue
 
             # --- Update step ---
-            X = self._generate_sigma_points(a_pred, P_pred, k_states)
+            res = self._update_step(a_pred, P_pred, y_t, W_m, W_c, model, t)
 
-            Y = np.zeros((2 * k_states + 1, k_endog))
-            for j in range(2 * k_states + 1):
-                Y[j] = model.observation(X[j], t)
-
-            y_hat = np.zeros(k_endog)
-            for j in range(2 * k_states + 1):
-                y_hat += W_m[j] * Y[j]
-            forecast[t] = y_hat
-
-            S = np.zeros((k_endog, k_endog))
-            for j in range(2 * k_states + 1):
-                dy = Y[j] - y_hat
-                S += W_c[j] * np.outer(dy, dy)
-            S += model.H
-            S = ensure_symmetric(S)
-            forecast_cov[t] = S
-
-            C = np.zeros((k_states, k_endog))
-            for j in range(2 * k_states + 1):
-                dx = X[j] - a_pred
-                dy = Y[j] - y_hat
-                C += W_c[j] * np.outer(dx, dy)
-
-            K = solve_via_cholesky(S, C.T).T
-            gain[t] = K
-
-            v = y_t - y_hat
-            residuals[t] = v
-
-            a_filt = a_pred + K @ v
-            P_filt = P_pred - K @ S @ K.T
-            P_filt = ensure_symmetric(P_filt)
-
-            filtered_state[t] = a_filt
-            filtered_cov[t] = P_filt
-
-            log_det_S = log_det_via_cholesky(S)
-            v_S_inv_v = float(v @ solve_via_cholesky(S, v))
-            ll_t = -0.5 * (k_endog * np.log(2.0 * np.pi) + log_det_S + v_S_inv_v)
-            loglike_obs[t] = ll_t
-            loglike_total += ll_t
+            forecast[t] = res.y_hat
+            forecast_cov[t] = res.S
+            gain[t] = res.K
+            residuals[t] = res.v
+            filtered_state[t] = res.a_filt
+            filtered_cov[t] = res.P_filt
+            loglike_obs[t] = res.ll_t
+            loglike_total += res.ll_t
             nobs_effective += 1
 
         return FilterOutput(

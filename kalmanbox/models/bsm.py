@@ -55,6 +55,11 @@ class BasicStructuralModel(StateSpaceModel):
 
         self._k_states = 2 + self._n_seasonal_states
 
+        # All states are diffuse-initialized (P1 = eye(k_states) * large), so the
+        # first k_states observations are dominated by the prior and must be excluded
+        # from the diffuse loglike correction (Durbin & Koopman, 2012).
+        self._n_diffuse = self._k_states
+
         super().__init__(endog)
 
     @property

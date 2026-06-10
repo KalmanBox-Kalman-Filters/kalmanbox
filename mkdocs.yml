@@ -20,7 +20,6 @@ theme:
   language: en
   logo: assets/images/logo.svg
   favicon: assets/images/favicon.svg
-  custom_dir: null
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
