@@ -287,11 +287,6 @@ plugins:
       handlers:
         python:
           paths: [.]
-          inventories:
-            - https://docs.python.org/3/objects.inv
-            - https://numpy.org/doc/stable/objects.inv
-            - https://docs.scipy.org/doc/scipy/objects.inv
-            - https://pandas.pydata.org/docs/objects.inv
           options:
             docstring_style: numpy
             docstring_section_style: spacy
